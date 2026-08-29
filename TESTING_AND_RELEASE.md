@@ -97,3 +97,7 @@ These warnings disappear only after the production apps are signed; the applicat
 Signing is intentionally deferred at this stage. Functional-test and preview-distribution installers remain unsigned and the download page must clearly explain the platform warnings and opening steps.
 
 No Apple or Windows signing credentials are required for the current preview workflow. Signing may be added later without changing the Pi installation transaction.
+
+
+## test.13 physical correction
+The remote Ninja shim paths use expanding double-quoted `$root` assignments. A regression gate rejects literal `$root/...` assignments before publication.

@@ -37,7 +37,9 @@ test('remote command starts a load-limited canonical installer in a transient de
   assert.match(command, /--collect/);
   assert.match(command, /--no-block/);
   assert.match(command, /--property=Nice=10/);
-  assert.match(command, /ninja_real='\$root\/ninja-real'/);
+  assert.match(command, /ninja_real="\$root\/ninja-real"/);
+  assert.match(command, /ninja_wrapper="\$root\/ninja-wrapper"/);
+  assert.doesNotMatch(command, /ninja_(?:real|wrapper)='\$root/);
   assert.match(command, /exec \/var\/lib\/flightcore-native-installer\/ninja-real -j1/);
   assert.match(command, /ninja-real --version/);
   assert.match(command, /BindReadOnlyPaths=\$ninja_wrapper:\/usr\/bin\/ninja/);
@@ -50,6 +52,27 @@ test('remote command starts a load-limited canonical installer in a transient de
   assert.doesNotMatch(command, /systemctl enable/);
   assert.doesNotMatch(command, /WantedBy=|ConditionPathExists=|Restart=/);
   assert.doesNotMatch(command, /password/i);
+});
+
+test('test.13 generated remote path assignments expand the installer root instead of preserving a literal dollar expression', () => {
+  const command = buildRemoteInstallCommand();
+  assert.match(command, /root='\/var\/lib\/flightcore-native-installer'/);
+  assert.match(command, /ninja_real="\$root\/ninja-real"/);
+  assert.match(command, /ninja_wrapper="\$root\/ninja-wrapper"/);
+  assert.doesNotMatch(command, /ninja_real='\$root\/ninja-real'/);
+  assert.doesNotMatch(command, /ninja_wrapper='\$root\/ninja-wrapper'/);
+
+  if (process.platform !== 'win32') {
+    const { execFileSync } = require('node:child_process');
+    const prefix = command.split('\n').slice(0, 9).join('\n');
+    const output = execFileSync('/bin/bash', ['-c', `${prefix}\nprintf '%s\\n' "$root" "$ninja_real" "$ninja_wrapper"`], { encoding: 'utf8' });
+    assert.equal(output, [
+      '/var/lib/flightcore-native-installer',
+      '/var/lib/flightcore-native-installer/ninja-real',
+      '/var/lib/flightcore-native-installer/ninja-wrapper',
+      ''
+    ].join('\n'));
+  }
 });
 
 test('redacts password and token output', () => {

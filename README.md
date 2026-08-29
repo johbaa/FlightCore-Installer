@@ -2,7 +2,7 @@
 
 Native macOS and Windows launcher for the existing FlightCore fresh-install workflow.
 
-Current functional-test source: **1.0.0-test.12**.
+Current functional-test source: **1.0.0-test.13**.
 
 ## User flow
 
@@ -40,3 +40,7 @@ Test.6 corrects the test.5 sandboxed-preload packaging defect. The native bridge
 - **Unsigned preview distribution:** publish only artifacts from a successful two-platform functional-test workflow, label them unsigned on the download page, and provide the required macOS and Windows opening instructions.
 
 The public download page expects release artifacts named `FlightCore-Installer-mac-universal.dmg` and `FlightCore-Installer-win-x64.exe`.
+
+
+## test.13 physical correction
+The remote Ninja shim paths use expanding double-quoted `$root` assignments. A regression gate rejects literal `$root/...` assignments before publication.
