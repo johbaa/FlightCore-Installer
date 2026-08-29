@@ -27,11 +27,14 @@ test('v3 includes paste support, logos, adaptive sizing and harmonized embedded 
   assert.equal(fs.existsSync(path.join(root, 'src/renderer/flightcore-logo.svg')), true);
 });
 
-test('v3 launcher is restart-safe and documents its acceptance boundary', () => {
+test('test.4 cannot relaunch the public installer after the Pi reboots', () => {
   const core = read('src/lib/core.js');
-  const scope = read('V3_SCOPE.md');
-  assert.match(core, /Restart=on-abnormal/);
-  assert.match(core, /ConditionPathExists=!\/etc\/siyi\/release_version/);
+  const scope = read('TEST4_CORRECTION.md');
+  assert.match(core, /systemd-run/);
+  assert.match(core, /--collect/);
+  assert.doesNotMatch(core, /systemctl enable --now/);
+  assert.doesNotMatch(core, /WantedBy=multi-user\.target/);
+  assert.match(scope, /must not relaunch/i);
   assert.match(scope, /frozen/i);
-  assert.equal(require('../package.json').version, '1.0.0-test.3');
+  assert.equal(require('../package.json').version, '1.0.0-test.4');
 });

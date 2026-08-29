@@ -111,7 +111,7 @@ window.flightcore.onEvent(event => {
       break;
     case 'connected':
       $('activityTitle').textContent = 'Raspberry Pi connected';
-      $('activityText').textContent = 'Creating a persistent, restart-safe installation transaction…';
+      $('activityText').textContent = 'Starting an isolated installation transaction…';
       break;
     case 'installer-started':
       $('activityTitle').textContent = 'FlightCore installer started';

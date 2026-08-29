@@ -1,6 +1,6 @@
 # FlightCore Installer — testing and release
 
-## 1.0.0-test.3 acceptance focus
+## 1.0.0-test.4 acceptance focus
 
 - The port-8090 installer remains inside the native application window.
 - The embedded page has no preload, Node.js, SSH, password or privileged installer access.
@@ -13,7 +13,9 @@
 - The FlightCore logo is visible on each native stage and the embedded progress stage.
 - The native window fits the active stage without an unnecessary outer scrollbar.
 - Port 8090 uses the native visual language while remaining in a separate sandboxed view.
-- The Pi installation runs as a persistent guarded systemd transaction and survives an installer-app disconnect or controlled Pi reboot.
+- The Pi installation runs in a detached transient systemd transaction and survives an installer-app or SSH disconnect.
+- The native launcher unit is never installed or enabled at boot and therefore cannot execute the public installer twice after the canonical installer reboots the Pi.
+- RC11's own post-reboot verifier is the sole reboot-continuation owner.
 - Frozen or disappearing port-8090 state never counts as success.
 - First Setup opens only after authenticated version, build, accepted status and active WebUI checks pass.
 
@@ -67,6 +69,7 @@ These warnings disappear only after the production apps are signed; the applicat
 - A failed SSH connection or installer exit produces a clear failure and retains its log.
 - Freeze port-8090 state deliberately and confirm the app reports a failure rather than waiting forever.
 - During a controlled install reboot, confirm monitoring resumes and the guarded transaction does not run again after `/etc/siyi/release_version` is committed.
+- Confirm the native transient unit is absent after reboot and the bootstrap log contains exactly one public-installer invocation.
 
 ## Production signing
 

@@ -17,7 +17,7 @@ const path = require('node:path');
       startInstall: async () => ({ ok: true }),
       fitWindow: async () => true,
       showLog: async () => true,
-      getAppInfo: async () => ({ version: '1.0.0-test.3', platform: 'darwin' }),
+      getAppInfo: async () => ({ version: '1.0.0-test.4', platform: 'darwin' }),
       onEvent: () => () => {}
     };
   });

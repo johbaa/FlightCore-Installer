@@ -394,7 +394,7 @@ async function monitorInstallation(host) {
   while (Date.now() < deadline && activeRun && !firstSetupHandoffStarted) {
     await delay(2000);
     try {
-      const state = await requestUrl(progressStateUrl(host), { json: true, timeoutMs: 4500 });
+      const state = await requestUrl(`${progressStateUrl(host)}?ts=${Date.now()}`, { json: true, timeoutMs: 4500 });
       outageStarted = 0;
       const nextSignature = progressStateSignature(state);
       if (nextSignature && nextSignature !== signature) {
@@ -470,7 +470,7 @@ async function runInstall(input) {
     emit('output', { stream: 'stderr', text: redactLine(launcher.stderr) });
     if (launcher.code !== 0) throw new Error(`The detached FlightCore installer could not be started (exit ${launcher.code ?? 'unknown'}).`);
     emit('installer-started');
-    appendLog('Persistent guarded installer service started; SSH launcher detached.');
+    appendLog('Transient detached installer service started; canonical installer owns reboot continuation.');
 
     const ready = await waitForPort(host, PROGRESS_PORT, PROGRESS_READY_TIMEOUT_MS);
     if (!ready) {

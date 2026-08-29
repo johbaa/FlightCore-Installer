@@ -1,8 +1,10 @@
-# FlightCore Installer 1.0.0-test.3 scope
+# FlightCore Installer test.3 UI scope — lifecycle superseded by test.4
 
 ## Reliability fix
 
-The native launcher no longer owns the lifetime of the Pi installation through one SSH stream. It downloads the canonical public installer, installs it under `/var/lib/flightcore-native-installer`, and starts a persistent systemd transaction. The unit is guarded by `ConditionPathExists=!/etc/siyi/release_version`, so a controlled reboot can resume an unfinished installation while a committed release cannot be installed twice.
+The test.3 persistent boot-enabled launcher design failed physical testing because it could relaunch the public installer after the Pi reboot. It is prohibited and replaced by the transient test.4 design documented in `TEST4_CORRECTION.md`.
+
+The native launcher no longer owns the installation through one SSH stream. It downloads the canonical public installer, stores it under `/var/lib/flightcore-native-installer`, and starts a detached transient systemd transaction. The transaction survives the app and SSH session but cannot start at boot. The canonical installer and `siyi-postinstall-verify.service` exclusively own reboot continuation.
 
 The native app monitors port 8090 independently from the SSH launcher. A changing state signature is treated as a heartbeat. A failed state, a frozen heartbeat, a disappearing progress service, or a transaction that ends without complete release evidence produces an explicit failure and preserves local plus remote diagnostics.
 

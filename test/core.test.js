@@ -29,12 +29,15 @@ test('formats fingerprints and rejects malformed values', () => {
   assert.throws(() => fingerprintLabel('abc'));
 });
 
-test('remote command installs a persistent guarded service from the canonical installer', () => {
+test('remote command starts the canonical installer in a transient detached service', () => {
   const command = buildRemoteInstallCommand();
   assert.ok(command.includes(INSTALLER_URL));
   assert.match(command, /flightcore-native-installer\.service/);
-  assert.match(command, /ConditionPathExists=!\/etc\/siyi\/release_version/);
-  assert.match(command, /systemctl enable --now/);
+  assert.match(command, /systemd-run/);
+  assert.match(command, /--collect/);
+  assert.match(command, /--no-block/);
+  assert.doesNotMatch(command, /systemctl enable/);
+  assert.doesNotMatch(command, /WantedBy=|ConditionPathExists=|Restart=/);
   assert.doesNotMatch(command, /password/i);
 });
 
@@ -77,9 +80,9 @@ test('distinguishes a running transaction from terminal failure', () => {
 });
 
 test('progress heartbeat signatures change only with authoritative fields', () => {
-  const first = progressStateSignature({ status: 'running', progress: 87, elapsed: '05:52', ignored: 1 });
-  const same = progressStateSignature({ status: 'running', progress: 87, elapsed: '05:52', ignored: 2 });
-  const changed = progressStateSignature({ status: 'running', progress: 88, elapsed: '05:53' });
+  const first = progressStateSignature({ status: 'installing', progress: 87, elapsed_seconds: 352, updated_at: '2026-08-29T15:00:00+02:00', ignored: 1 });
+  const same = progressStateSignature({ status: 'installing', progress: 87, elapsed_seconds: 352, updated_at: '2026-08-29T15:00:00+02:00', ignored: 2 });
+  const changed = progressStateSignature({ status: 'installing', progress: 87, elapsed_seconds: 353, updated_at: '2026-08-29T15:00:01+02:00' });
   assert.equal(first, same);
   assert.notEqual(first, changed);
 });

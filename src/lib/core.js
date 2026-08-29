@@ -70,29 +70,17 @@ function buildRemoteInstallCommand() {
     'sudo -n install -m 700 "$tmp" "$script"',
     'sudo -n touch "$log"',
     'sudo -n chmod 600 "$log"',
-    'sudo -n tee "/etc/systemd/system/$unit" >/dev/null <<EOF',
-    '[Unit]',
-    'Description=FlightCore native fresh-install transaction',
-    'Wants=network-online.target',
-    'After=network-online.target',
-    'ConditionPathExists=!/etc/siyi/release_version',
-    '',
-    '[Service]',
-    'Type=exec',
-    `ExecStart=/bin/bash ${REMOTE_BOOTSTRAP}`,
-    'TimeoutStartSec=infinity',
-    'Restart=on-abnormal',
-    'RestartSec=5',
-    `StandardOutput=append:${REMOTE_BOOTSTRAP_LOG}`,
-    `StandardError=append:${REMOTE_BOOTSTRAP_LOG}`,
-    '',
-    '[Install]',
-    'WantedBy=multi-user.target',
-    'EOF',
-    'sudo -n systemctl daemon-reload',
-    'sudo -n systemctl enable --now "$unit"',
-    'state="$(sudo -n systemctl is-active "$unit" 2>/dev/null || true)"',
-    'case "$state" in active|activating) ;; *) echo "Detached installer failed to start: $state"; exit 1;; esac',
+    '# A transient unit survives the app and SSH session, but is not installed or enabled at boot.',
+    '# The canonical installer exclusively owns its deliberate reboot and post-reboot verifier.',
+    'sudo -n systemctl reset-failed "$unit" >/dev/null 2>&1 || true',
+    'sudo -n systemd-run --unit="$unit" --collect --no-block --property=Type=exec --property=TimeoutStartSec=infinity --property="StandardOutput=append:$log" --property="StandardError=append:$log" /bin/bash "$script" >/dev/null',
+    'state=""',
+    'for _try in $(seq 1 50); do',
+    '  state="$(sudo -n systemctl is-active "$unit" 2>/dev/null || true)"',
+    '  case "$state" in active|activating) break;; failed) break;; esac',
+    '  sleep 0.1',
+    'done',
+    'case "$state" in active|activating) ;; *) echo "Detached installer failed to start: ${state:-unknown}"; exit 1;; esac',
     'echo "Detached FlightCore installer started: $state"'
   ].join('\n');
 }
@@ -139,7 +127,7 @@ function progressStateSignature(state) {
   if (!state || typeof state !== 'object') return '';
   return JSON.stringify({
     status: state.status ?? null, progress: state.progress ?? null, stage: state.stage ?? null,
-    elapsed: state.elapsed ?? null, updated_at: state.updated_at ?? null,
+    elapsed_seconds: state.elapsed_seconds ?? state.elapsed ?? null, updated_at: state.updated_at ?? null,
     error: state.error ?? null, log_tail: state.log_tail ?? null
   });
 }
