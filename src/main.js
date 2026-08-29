@@ -1,6 +1,6 @@
 'use strict';
 
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, shell } = require('electron');
 const { Client } = require('ssh2');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -12,13 +12,91 @@ const {
   normalizeUsername,
   fingerprintLabel,
   buildRemoteInstallCommand,
-  redactLine
+  redactLine,
+  progressUrl,
+  firstSetupUrl,
+  classifyInstallerUrl
 } = require('./lib/core');
 
 let mainWindow;
 let activeClient = null;
 let activeRun = false;
 let activeLogPath = null;
+let progressView = null;
+let activeHost = '';
+let firstSetupHandoffStarted = false;
+
+function resizeProgressView() {
+  if (!mainWindow || mainWindow.isDestroyed() || !progressView) return;
+  const [width, height] = mainWindow.getContentSize();
+  progressView.setBounds({ x: 0, y: 0, width, height });
+}
+
+async function handoffToFirstSetup(host) {
+  if (firstSetupHandoffStarted) return;
+  firstSetupHandoffStarted = true;
+  const url = firstSetupUrl(host);
+  appendLog(`Verified First Setup handoff: ${url}`);
+  try {
+    await shell.openExternal(url);
+    appendLog('First Setup opened in the default browser. Native installer closing.');
+    app.quit();
+  } catch (error) {
+    firstSetupHandoffStarted = false;
+    const message = `Could not open FlightCore First Setup: ${error?.message || String(error)}`;
+    appendLog(`FAIL: ${message}`);
+    emit('failed', { message, logPath: activeLogPath });
+  }
+}
+
+function handleEmbeddedNavigation(url) {
+  const kind = classifyInstallerUrl(url, activeHost);
+  if (kind === 'progress') return true;
+  if (kind === 'first-setup') {
+    void handoffToFirstSetup(activeHost);
+    return false;
+  }
+  appendLog(`Blocked embedded navigation: ${String(url).slice(0, 500)}`);
+  return false;
+}
+
+function showEmbeddedProgress(host) {
+  if (!mainWindow || mainWindow.isDestroyed()) throw new Error('The installer window is unavailable.');
+  activeHost = normalizeHost(host);
+  firstSetupHandoffStarted = false;
+  if (progressView) {
+    try { mainWindow.contentView.removeChildView(progressView); } catch {}
+    try { progressView.webContents.close(); } catch {}
+  }
+  progressView = new WebContentsView({
+    webPreferences: {
+      partition: 'flightcore-progress',
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      webSecurity: true,
+      allowRunningInsecureContent: false
+    }
+  });
+  progressView.setBackgroundColor('#07111f');
+  progressView.webContents.session.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false));
+  progressView.webContents.on('will-attach-webview', event => event.preventDefault());
+  progressView.webContents.on('will-navigate', (event, url) => {
+    if (!handleEmbeddedNavigation(url)) event.preventDefault();
+  });
+  progressView.webContents.on('will-redirect', (event, url) => {
+    if (!handleEmbeddedNavigation(url)) event.preventDefault();
+  });
+  progressView.webContents.setWindowOpenHandler(({ url }) => {
+    handleEmbeddedNavigation(url);
+    return { action: 'deny' };
+  });
+  mainWindow.contentView.addChildView(progressView);
+  resizeProgressView();
+  const url = progressUrl(activeHost);
+  appendLog(`Loading isolated embedded progress UI: ${url}`);
+  progressView.webContents.loadURL(url);
+}
 
 function createWindow() {
   const capturePath = process.env.FLIGHTCORE_CAPTURE_UI || '';
@@ -51,6 +129,7 @@ function createWindow() {
     });
   }
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  mainWindow.on('resize', resizeProgressView);
 }
 
 function emit(type, payload = {}) {
@@ -171,7 +250,7 @@ function probeFingerprint(input) {
   });
 }
 
-function waitForPort(host, port, timeoutMs, onReady) {
+function waitForPort(host, port, timeoutMs, onReady, onTimeout) {
   const started = Date.now();
   let stopped = false;
   const attempt = () => {
@@ -179,7 +258,11 @@ function waitForPort(host, port, timeoutMs, onReady) {
     const socket = net.createConnection({ host, port });
     const retry = () => {
       socket.destroy();
-      if (Date.now() - started >= timeoutMs) return;
+      if (Date.now() - started >= timeoutMs) {
+        stopped = true;
+        if (onTimeout) onTimeout();
+        return;
+      }
       setTimeout(attempt, 800);
     };
     socket.setTimeout(1200);
@@ -214,15 +297,20 @@ async function runInstall(input) {
     activeClient = client;
     let openedProgress = false;
     let commandStarted = false;
-    const stopPolling = waitForPort(host, PROGRESS_PORT, 120000, async () => {
+    let terminalFailure = false;
+    const stopPolling = waitForPort(host, PROGRESS_PORT, 120000, () => {
       if (openedProgress) return;
       openedProgress = true;
-      const url = `http://${host}:${PROGRESS_PORT}/`;
+      const url = progressUrl(host);
       appendLog(`Progress WebUI ready: ${url}`);
-      emit('progress-ready', { url });
-      await shell.openExternal(url);
+      emit('progress-ready', { url, embedded: true });
+      showEmbeddedProgress(host);
+    }, () => {
+      if (!openedProgress) fail(new Error('The FlightCore installation interface did not become ready on port 8090.'));
     });
     const fail = err => {
+      if (terminalFailure || openedProgress) return;
+      terminalFailure = true;
       stopPolling();
       activeRun = false;
       activeClient = null;
@@ -252,17 +340,18 @@ async function runInstall(input) {
           emit('output', { stream: 'stderr', text: redactLine(text) });
         });
         stream.on('close', (code, signal) => {
-          stopPolling();
           client.end();
-          activeRun = false;
           activeClient = null;
-          if (code === 0) {
-            appendLog('FLIGHTCORE FRESH INSTALL LAUNCH: PASS');
-            emit('completed', { code, signal, openedProgress, logPath });
+          if (openedProgress) {
+            activeRun = false;
+            appendLog(`Remote SSH command ended (code=${code ?? 'unknown'}, signal=${signal || 'none'}); embedded installation UI remains authoritative.`);
+            emit('command-ended', { code, signal, logPath });
             resolve({ ok: true, code, openedProgress, logPath });
-          } else {
-            fail(new Error(`The FlightCore installer stopped with exit code ${code ?? 'unknown'}.`));
+            return;
           }
+          if (code === 0) return;
+          if (code !== null && code !== undefined) fail(new Error(`The FlightCore installer stopped with exit code ${code}.`));
+          else appendLog('Remote SSH command ended without an exit code; continuing to wait for the port-8090 installation interface.');
         });
       });
     });
@@ -283,7 +372,7 @@ async function runInstall(input) {
 
 ipcMain.handle('probe-host', async (_event, input) => probeFingerprint(input));
 ipcMain.handle('start-install', async (_event, input) => runInstall(input));
-ipcMain.handle('open-progress', async (_event, host) => shell.openExternal(`http://${normalizeHost(host)}:${PROGRESS_PORT}/`));
+ipcMain.handle('open-progress', async (_event, host) => shell.openExternal(progressUrl(host)));
 ipcMain.handle('show-log', async () => activeLogPath ? shell.showItemInFolder(activeLogPath) : false);
 ipcMain.handle('get-app-info', async () => ({ version: app.getVersion(), platform: process.platform }));
 
@@ -296,4 +385,7 @@ app.on('activate', () => {
 });
 app.on('before-quit', () => {
   if (activeClient) activeClient.end();
+  if (progressView) {
+    try { progressView.webContents.close(); } catch {}
+  }
 });

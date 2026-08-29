@@ -102,21 +102,15 @@ window.flightcore.onEvent(event => {
     case 'output': appendOutput(event.text); break;
     case 'progress-ready':
       state.progressUrl = event.url;
+      state.password = '';
+      $('password').value = '';
       setStep(4);
-      $('handoff').classList.remove('hidden');
-      $('openButton').classList.remove('hidden');
-      $('runTitle').textContent = 'Continue in your browser';
+      $('runTitle').textContent = 'Installation in progress';
       $('activityTitle').textContent = 'Installation interface is ready';
-      $('activityText').textContent = 'The existing FlightCore installation UI has opened in your default browser.';
+      $('activityText').textContent = 'The FlightCore installation interface is loading securely in this window.';
       break;
-    case 'completed':
-      $('spinner').classList.add('hidden');
-      $('runStatus').innerHTML = '<i></i> Started';
-      $('activityTitle').textContent = 'Launcher completed successfully';
-      $('activityText').textContent = event.openedProgress ? 'Continue monitoring the installation in your browser.' : 'Open the installation progress page to continue.';
-      $('openButton').classList.remove('hidden');
-      $('logButton').classList.remove('hidden');
-      setStep(4);
+    case 'command-ended':
+      appendOutput(`\nSSH launcher ended with code ${event.code ?? 'unknown'}; installation status remains in the embedded interface.\n`);
       break;
     case 'failed':
       $('spinner').classList.add('hidden');

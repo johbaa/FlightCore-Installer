@@ -2,6 +2,7 @@
 
 const INSTALLER_URL = 'https://raw.githubusercontent.com/johbaa/SIYI_PI_Installer/main/install.sh';
 const PROGRESS_PORT = 8090;
+const SETUP_PORT = 8080;
 
 function normalizeHost(value) {
   const host = String(value || '').trim();
@@ -16,6 +17,35 @@ function normalizeUsername(value) {
   const username = String(value || 'pi').trim();
   if (!/^[a-z_][a-z0-9_-]{0,31}$/i.test(username)) throw new Error('The SSH user name is not valid.');
   return username;
+}
+
+function hostForUrl(value) {
+  const host = normalizeHost(value);
+  return host.includes(':') && !host.startsWith('[') ? `[${host}]` : host;
+}
+
+function progressUrl(host) {
+  return `http://${hostForUrl(host)}:${PROGRESS_PORT}/`;
+}
+
+function firstSetupUrl(host) {
+  return `http://${hostForUrl(host)}:${SETUP_PORT}/first_setup`;
+}
+
+function classifyInstallerUrl(value, host) {
+  let candidate;
+  try {
+    candidate = new URL(String(value || ''));
+  } catch {
+    return 'blocked';
+  }
+  const expectedProgress = new URL(progressUrl(host));
+  const expectedSetup = new URL(firstSetupUrl(host));
+  if (candidate.username || candidate.password) return 'blocked';
+  if (candidate.protocol !== 'http:' || candidate.hostname !== expectedProgress.hostname) return 'blocked';
+  if (candidate.port === expectedProgress.port) return 'progress';
+  if (candidate.port === expectedSetup.port && candidate.pathname === expectedSetup.pathname) return 'first-setup';
+  return 'blocked';
 }
 
 function fingerprintLabel(hexDigest) {
@@ -48,8 +78,13 @@ function redactLine(line) {
 module.exports = {
   INSTALLER_URL,
   PROGRESS_PORT,
+  SETUP_PORT,
   normalizeHost,
   normalizeUsername,
+  hostForUrl,
+  progressUrl,
+  firstSetupUrl,
+  classifyInstallerUrl,
   fingerprintLabel,
   buildRemoteInstallCommand,
   redactLine

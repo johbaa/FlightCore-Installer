@@ -1,5 +1,15 @@
 # FlightCore Installer — testing and release
 
+## 1.0.0-test.2 acceptance focus
+
+- The port-8090 installer remains inside the native application window.
+- The embedded page has no preload, Node.js, SSH, password or privileged installer access.
+- Navigation outside the exact target Pi port-8090 origin is blocked.
+- Only the exact target Pi `http://HOST:8080/first_setup` handoff may open in the default browser.
+- The app closes after that browser handoff.
+- An SSH stream ending without a numeric exit code after port 8090 is ready is not reported as installation failure.
+- macOS contains the Local Network permission description.
+
 ## Safety boundary
 
 Use a freshly prepared **bench/test Raspberry Pi**, never an aircraft that is in operation. The launcher invokes the current public FlightCore `install.sh`; a successful functional test therefore performs a real fresh installation on the selected Pi.
@@ -23,8 +33,8 @@ These warnings disappear only after the production apps are signed; the applicat
 4. Open the DMG and double-click **FlightCore Installer**. For this unsigned test only, use **Control-click → Open** if macOS blocks it.
 5. Enter the test Pi address, SSH user `pi`, and password.
 6. Confirm that the app shows the Pi SSH fingerprint before installation.
-7. Confirm the existing FlightCore progress UI automatically opens at `http://<Pi-IP>:8090`.
-8. Complete installation, reboot and `/first_setup` in the existing browser UI.
+7. Confirm the existing FlightCore progress UI appears inside the native installer window; no second browser window opens for port 8090.
+8. Complete installation and confirm `/first_setup` opens in the normal browser while the native installer closes.
 9. In Downloads, preserve `FLIGHTCORE_FRESH_INSTALL_*.log`.
 
 ## Windows functional test
@@ -33,8 +43,8 @@ These warnings disappear only after the production apps are signed; the applicat
 2. Double-click `FlightCore-Installer-win-x64.exe`. For this unsigned test only, use **More info → Run anyway** if SmartScreen blocks it.
 3. Enter the same test Pi address, SSH user `pi`, and password.
 4. Confirm that the same fingerprint, status language and four-stage launcher flow appear.
-5. Confirm the default browser automatically opens `http://<Pi-IP>:8090`.
-6. Complete installation, reboot and `/first_setup` in the existing browser UI.
+5. Confirm the port-8090 UI appears inside the native installer window.
+6. Complete installation and confirm `/first_setup` opens in the normal browser while the native installer closes.
 7. In Downloads, preserve `FLIGHTCORE_FRESH_INSTALL_*.log`.
 
 ## Required acceptance results on both platforms

@@ -2,7 +2,10 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { normalizeHost, normalizeUsername, fingerprintLabel, buildRemoteInstallCommand, redactLine, INSTALLER_URL } = require('../src/lib/core');
+const {
+  normalizeHost, normalizeUsername, fingerprintLabel, buildRemoteInstallCommand,
+  redactLine, INSTALLER_URL, progressUrl, firstSetupUrl, classifyInstallerUrl
+} = require('../src/lib/core');
 
 test('accepts normal Pi addresses and host names', () => {
   assert.equal(normalizeHost(' 192.168.193.51 '), '192.168.193.51');
@@ -34,4 +37,20 @@ test('remote command uses the canonical public installer and fixed quoting', () 
 test('redacts password and token output', () => {
   assert.equal(redactLine('password: secret'), 'password: [REDACTED]');
   assert.equal(redactLine('token=abc123'), 'token=[REDACTED]');
+});
+
+test('builds exact progress and First Setup URLs including IPv6 brackets', () => {
+  assert.equal(progressUrl('192.168.1.115'), 'http://192.168.1.115:8090/');
+  assert.equal(firstSetupUrl('192.168.1.115'), 'http://192.168.1.115:8080/first_setup');
+  assert.equal(progressUrl('fd00::51'), 'http://[fd00::51]:8090/');
+});
+
+test('isolates embedded navigation and permits only the exact Pi First Setup handoff', () => {
+  const host = '192.168.1.115';
+  assert.equal(classifyInstallerUrl('http://192.168.1.115:8090/status?run=1', host), 'progress');
+  assert.equal(classifyInstallerUrl('http://192.168.1.115:8080/first_setup', host), 'first-setup');
+  assert.equal(classifyInstallerUrl('http://192.168.1.115:8080/', host), 'blocked');
+  assert.equal(classifyInstallerUrl('http://192.168.1.116:8080/first_setup', host), 'blocked');
+  assert.equal(classifyInstallerUrl('https://example.com/first_setup', host), 'blocked');
+  assert.equal(classifyInstallerUrl('http://user:pass@192.168.1.115:8090/', host), 'blocked');
 });
