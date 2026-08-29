@@ -1,6 +1,6 @@
 # FlightCore Installer — testing and release
 
-## 1.0.0-test.8 acceptance focus
+## 1.0.0-test.9 acceptance focus
 
 - With the Pi powered off, enter the intended address and password and press Connect and verify once.
 - Confirm the button and connection status show a live Waiting for SSH countdown without repeated authentication attempts.

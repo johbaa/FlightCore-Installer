@@ -86,7 +86,7 @@ test('test.8 waits once for SSH readiness, owns one clock and limits native buil
   assert.match(core, /exec \/usr\/bin\/ninja -j1/);
 });
 
-test('test.4 cannot relaunch the public installer after the Pi reboots', () => {
+test('test.9 retains the complete build manifest and cannot relaunch after reboot', () => {
   const core = read('src/lib/core.js');
   const scope = read('TEST4_CORRECTION.md');
   assert.match(core, /systemd-run/);
@@ -95,5 +95,11 @@ test('test.4 cannot relaunch the public installer after the Pi reboots', () => {
   assert.doesNotMatch(core, /WantedBy=multi-user\.target/);
   assert.match(scope, /must not relaunch/i);
   assert.match(scope, /frozen/i);
-  assert.equal(require('../package.json').version, '1.0.0-test.8');
+  const manifest = require('../package.json');
+  assert.equal(manifest.version, '1.0.0-test.9');
+  assert.equal(manifest.scripts.test, 'node --test test/*.test.js');
+  assert.equal(manifest.scripts['dist:mac'], 'electron-builder --mac dmg --universal');
+  assert.equal(manifest.scripts['dist:win'], 'electron-builder --win nsis --x64');
+  assert.equal(manifest.build.appId, 'se.flightcore.installer');
+  assert.match(read('scripts/capture-ui.js'), /version: '1\.0\.0-test\.9'/);
 });

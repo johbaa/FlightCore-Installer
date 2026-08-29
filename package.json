@@ -1,12 +1,88 @@
 {
   "name": "flightcore-installer",
-  "version": "1.0.0-test.8",
+  "version": "1.0.0-test.9",
   "private": true,
   "description": "Native macOS and Windows launcher for FlightCore fresh installation",
   "main": "src/main.js",
   "author": "FlightCore",
   "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "dist:mac": "electron-builder --mac dmg --universal",
+    "dist:win": "electron-builder --win nsis --x64",
+    "dist:dir": "electron-builder --dir"
+  },
   "dependencies": {
     "ssh2": "^1.16.0"
+  },
+  "devDependencies": {
+    "@electron/notarize": "^3.1.1",
+    "electron": "^37.4.0",
+    "electron-builder": "^26.0.12",
+    "png2icons": "^2.0.1"
+  },
+  "build": {
+    "appId": "se.flightcore.installer",
+    "productName": "FlightCore Installer",
+    "artifactName": "FlightCore-Installer-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build-resources"
+    },
+    "afterSign": "scripts/notarize.js",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/ssh2/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "extendInfo": {
+        "NSLocalNetworkUsageDescription": "FlightCore Installer connects securely to a Raspberry Pi on your local network to install FlightCore."
+      },
+      "x64ArchFiles": "Contents/Resources/app.asar.unpacked/node_modules/ssh2/lib/protocol/crypto/build/Release/sshcrypto.node",
+      "entitlements": "build-resources/entitlements.mac.plist",
+      "entitlementsInherit": "build-resources/entitlements.mac.plist",
+      "icon": "build-resources/icon.icns",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ]
+    },
+    "dmg": {
+      "title": "FlightCore Installer",
+      "sign": false
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build-resources/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": true,
+      "createDesktopShortcut": false,
+      "createStartMenuShortcut": true,
+      "shortcutName": "FlightCore Installer",
+      "deleteAppDataOnUninstall": false
+    },
+    "publish": null
   }
 }
