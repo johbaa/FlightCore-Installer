@@ -527,7 +527,13 @@ async function monitorInstallation(host) {
       if (rebootObservedAt && Date.now() - rebootObservedAt > REBOOT_GRACE_MS) {
         throw new Error('The Raspberry Pi restarted before FlightCore produced an authenticated accepted release. The installation was interrupted.');
       }
-      if (Date.now() - outageStarted > REBOOT_GRACE_MS) throw new Error('The Raspberry Pi did not return within the installation recovery window.');
+      // Loss of SSH alone is not proof of reboot. test.10 physical evidence showed the same boot
+      // could become temporarily unreachable while the installer was still active. Only an
+      // authenticated boot-ID change starts the reboot grace timer; otherwise keep monitoring
+      // until the overall installation safety deadline.
+      if (outageStarted && Date.now() - outageStarted > REBOOT_GRACE_MS) {
+        emit('monitor-status', { message: 'Raspberry Pi is temporarily unreachable; waiting for authenticated recovery…' });
+      }
     }
   }
   if (!firstSetupHandoffStarted) throw new Error('FlightCore installation exceeded the 30-minute safety limit.');

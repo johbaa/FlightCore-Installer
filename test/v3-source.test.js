@@ -83,10 +83,11 @@ test('test.8 waits once for SSH readiness, owns one clock and limits native buil
   assert.doesNotMatch(main, /FlightCore Installer — Elapsed/);
   assert.match(main, /body\{[^}]*overflow:hidden!important/);
   assert.doesNotMatch(main, /min-height:100vh/);
-  assert.match(core, /exec \/usr\/bin\/ninja -j1/);
+  assert.match(core, /exec \/run\/flightcore-native-installer-ninja-real -j1/);
+  assert.match(core, /BindReadOnlyPaths=\$ninja_wrapper:\/usr\/bin\/ninja/);
 });
 
-test('test.10 retains the complete build manifest and cannot relaunch after reboot', () => {
+test('test.11 retains the complete build manifest and cannot relaunch after reboot', () => {
   const core = read('src/lib/core.js');
   const scope = read('TEST4_CORRECTION.md');
   assert.match(core, /systemd-run/);
@@ -96,16 +97,16 @@ test('test.10 retains the complete build manifest and cannot relaunch after rebo
   assert.match(scope, /must not relaunch/i);
   assert.match(scope, /frozen/i);
   const manifest = require('../package.json');
-  assert.equal(manifest.version, '1.0.0-test.10');
+  assert.equal(manifest.version, '1.0.0-test.11');
   assert.equal(manifest.scripts.test, 'node --test test/*.test.js');
   assert.equal(manifest.scripts['dist:mac'], 'electron-builder --mac dmg --universal');
   assert.equal(manifest.scripts['dist:win'], 'electron-builder --win nsis --x64');
   assert.equal(manifest.build.appId, 'se.flightcore.installer');
-  assert.match(read('scripts/capture-ui.js'), /version: '1\.0\.0-test\.10'/);
+  assert.match(read('scripts/capture-ui.js'), /version: '1\.0\.0-test\.11'/);
 });
 
 
-test('test.10 disables the hardware watchdog only for the detached install transaction', () => {
+test('test.11 retains the transaction-only watchdog guard', () => {
   const core = read('src/lib/core.js');
   assert.match(core, /RuntimeWatchdogSec=0/);
   assert.match(core, /RebootWatchdogSec=0/);
@@ -115,4 +116,17 @@ test('test.10 disables the hardware watchdog only for the detached install trans
   assert.match(core, /systemctl is-system-running/);
   assert.doesNotMatch(core, /\/etc\/systemd\/system\.conf\.d\/90-flightcore-installer-watchdog/);
   assert.match(read('TEST10_WATCHDOG_GUARD.md'), /60-second timeout/);
+});
+
+
+test('test.11 serializes Ninja inside the transient unit and does not misclassify SSH loss as reboot', () => {
+  const core = read('src/lib/core.js');
+  const main = read('src/main.js');
+  assert.match(core, /flightcore-native-installer-ninja-real/);
+  assert.match(core, /exec \/run\/flightcore-native-installer-ninja-real -j1/);
+  assert.match(core, /BindReadOnlyPaths=\$ninja_wrapper:\/usr\/bin\/ninja/);
+  assert.doesNotMatch(core, /flightcore-native-installer-bin/);
+  assert.doesNotMatch(main, /did not return within the installation recovery window/);
+  assert.match(main, /Only an[\s\S]*authenticated boot-ID change starts the reboot grace timer/);
+  assert.match(read('TEST11_SERIAL_BUILD_RECOVERY.md'), /swap reached 0 kB free/i);
 });
