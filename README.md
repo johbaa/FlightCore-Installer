@@ -2,7 +2,7 @@
 
 Native macOS and Windows launcher for the existing FlightCore fresh-install workflow.
 
-Current functional-test source: **1.0.0-test.9**.
+Current functional-test source: **1.0.0-test.10**.
 
 ## User flow
 
@@ -22,6 +22,9 @@ The embedded installation page runs in a separate sandboxed Electron view withou
 Version 1.0.0-test.8 retains the test.3 UI scope: native paste shortcuts and an editable-field context menu, the FlightCore logo throughout, harmonized embedded progress styling, and adaptive window sizing. It also keeps the user-selected window position, displays one live elapsed clock in the embedded header, removes outer document scrolling from the embedded progress page, treats empty post-reboot status as transitional until authenticated evidence proves acceptance or failure, and lets the user press Connect and verify once while the Pi is still booting by waiting up to ten minutes for SSH port 22.
 
 Test.8 also limits MAVLink Router's native Ninja build to one compilation job on the 1 GB Raspberry Pi. This directly addresses the repeatable test.6/test.7 restart under peak parallel compilation load while leaving the canonical FlightCore installer, transaction and deliberate reboot ownership unchanged.
+
+
+Test.10 keeps the complete test.9 Windows/macOS build manifest and launcher behavior, but hardens the Pi-side fresh-install transaction against the repeatable RC11 native-build reset. Field evidence showed Raspberry Pi OS systemd actively owning the BCM2835 hardware watchdog with a 60-second timeout. The detached installer now writes a temporary `/run/systemd/system.conf.d` drop-in that disables runtime/reboot watchdogs only for the installation transaction, reexecs systemd, retains the existing single-job Ninja wrapper, and restores normal watchdog configuration on ordinary failure. `/run` is cleared by the canonical reboot, so the normal boot watchdog policy is restored automatically.
 
 Test.9 restores and gates the complete source `package.json` after test.8's GitHub workflow correctly rejected a stripped packaged-app copy that lacked build and test scripts. Test.8 produced no installers and is not reusable.
 

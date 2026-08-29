@@ -1,6 +1,6 @@
 # FlightCore Installer — testing and release
 
-## 1.0.0-test.9 acceptance focus
+## 1.0.0-test.10 acceptance focus
 
 - With the Pi powered off, enter the intended address and password and press Connect and verify once.
 - Confirm the button and connection status show a live Waiting for SSH countdown without repeated authentication attempts.
@@ -11,6 +11,8 @@
 - Confirm exactly one `Elapsed MM:SS` display is visible in the embedded header, with no second timer in the native title bar, and that it advances once per second while remote progress is unchanged.
 - Confirm the embedded progress page has no outer document scrollbar; Technical details retains its own internal scrollbar when required.
 - Confirm the MAVLink Router build advances beyond the former `[14/25]` reset point and the Pi does not restart before the canonical deliberate reboot.
+- Confirm the bootstrap log reports the transaction-only watchdog guard and that the guard is under `/run/systemd/system.conf.d`, never `/etc`.
+- Confirm the runtime hardware watchdog is suspended during the native build and restored automatically after an ordinary installer failure or by the canonical reboot.
 - Confirm the diagnostic log shows the fresh-install Ninja wrapper uses `-j1` and exists only in `/run`.
 - Confirm compilation-time progress stalls do not cause frequent SSH inspections or premature launcher failure.
 - Confirm an empty authenticated snapshot after reboot remains transitional, while a reboot that never produces acceptance is reported as an interrupted installation after the recovery window.

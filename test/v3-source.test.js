@@ -86,7 +86,7 @@ test('test.8 waits once for SSH readiness, owns one clock and limits native buil
   assert.match(core, /exec \/usr\/bin\/ninja -j1/);
 });
 
-test('test.9 retains the complete build manifest and cannot relaunch after reboot', () => {
+test('test.10 retains the complete build manifest and cannot relaunch after reboot', () => {
   const core = read('src/lib/core.js');
   const scope = read('TEST4_CORRECTION.md');
   assert.match(core, /systemd-run/);
@@ -96,10 +96,23 @@ test('test.9 retains the complete build manifest and cannot relaunch after reboo
   assert.match(scope, /must not relaunch/i);
   assert.match(scope, /frozen/i);
   const manifest = require('../package.json');
-  assert.equal(manifest.version, '1.0.0-test.9');
+  assert.equal(manifest.version, '1.0.0-test.10');
   assert.equal(manifest.scripts.test, 'node --test test/*.test.js');
   assert.equal(manifest.scripts['dist:mac'], 'electron-builder --mac dmg --universal');
   assert.equal(manifest.scripts['dist:win'], 'electron-builder --win nsis --x64');
   assert.equal(manifest.build.appId, 'se.flightcore.installer');
-  assert.match(read('scripts/capture-ui.js'), /version: '1\.0\.0-test\.9'/);
+  assert.match(read('scripts/capture-ui.js'), /version: '1\.0\.0-test\.10'/);
+});
+
+
+test('test.10 disables the hardware watchdog only for the detached install transaction', () => {
+  const core = read('src/lib/core.js');
+  assert.match(core, /RuntimeWatchdogSec=0/);
+  assert.match(core, /RebootWatchdogSec=0/);
+  assert.match(core, /\/run\/systemd\/system\.conf\.d\/90-flightcore-installer-watchdog\.conf/);
+  assert.match(core, /systemctl daemon-reexec/);
+  assert.match(core, /trap cleanup_watchdog EXIT/);
+  assert.match(core, /systemctl is-system-running/);
+  assert.doesNotMatch(core, /\/etc\/systemd\/system\.conf\.d\/90-flightcore-installer-watchdog/);
+  assert.match(read('TEST10_WATCHDOG_GUARD.md'), /60-second timeout/);
 });

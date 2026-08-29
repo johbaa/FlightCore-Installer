@@ -39,6 +39,11 @@ test('remote command starts a load-limited canonical installer in a transient de
   assert.match(command, /--property=Nice=10/);
   assert.match(command, /flightcore-native-installer-bin/);
   assert.match(command, /exec \/usr\/bin\/ninja -j1/);
+  assert.match(command, /RuntimeWatchdogSec=0/);
+  assert.match(command, /RebootWatchdogSec=0/);
+  assert.match(command, /\/run\/systemd\/system\.conf\.d\/90-flightcore-installer-watchdog\.conf/);
+  assert.match(command, /systemctl daemon-reexec/);
+  assert.match(command, /\/bin\/bash \"\$guard\"/);
   assert.match(command, /PATH=\$throttle_path/);
   assert.doesNotMatch(command, /systemctl enable/);
   assert.doesNotMatch(command, /WantedBy=|ConditionPathExists=|Restart=/);
