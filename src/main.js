@@ -174,6 +174,7 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => { if (!capturePath) mainWindow.show(); });
   if (capturePath) {
     mainWindow.webContents.once('did-finish-load', async () => {
+      await delay(400);
       const image = await mainWindow.webContents.capturePage();
       fs.writeFileSync(capturePath, image.toPNG());
       app.quit();

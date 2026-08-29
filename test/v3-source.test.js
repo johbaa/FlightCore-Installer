@@ -44,6 +44,13 @@ test('test.5 preserves window position, removes outer scrolling and owns a live 
   assert.match(main, /#elapsed\{display:none!important\}/);
 });
 
+test('test.6 sandboxed preload contains no unsupported local module import', () => {
+  const preload = read('src/preload.js');
+  assert.doesNotMatch(preload, /require\(['"]\.\//);
+  assert.match(preload, /function projectedElapsedSeconds/);
+  assert.match(preload, /contextBridge\.exposeInMainWorld/);
+});
+
 test('test.4 cannot relaunch the public installer after the Pi reboots', () => {
   const core = read('src/lib/core.js');
   const scope = read('TEST4_CORRECTION.md');
@@ -53,5 +60,5 @@ test('test.4 cannot relaunch the public installer after the Pi reboots', () => {
   assert.doesNotMatch(core, /WantedBy=multi-user\.target/);
   assert.match(scope, /must not relaunch/i);
   assert.match(scope, /frozen/i);
-  assert.equal(require('../package.json').version, '1.0.0-test.5');
+  assert.equal(require('../package.json').version, '1.0.0-test.6');
 });

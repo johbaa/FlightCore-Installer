@@ -1,6 +1,6 @@
 # FlightCore Installer — testing and release
 
-## 1.0.0-test.5 acceptance focus
+## 1.0.0-test.6 acceptance focus
 
 - The port-8090 installer remains inside the native application window.
 - The embedded page has no preload, Node.js, SSH, password or privileged installer access.

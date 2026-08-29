@@ -1,7 +1,16 @@
 'use strict';
 
 const { contextBridge, ipcRenderer } = require('electron');
-const { projectedElapsedSeconds } = require('./lib/core');
+
+// Sandboxed Electron preloads may use the Electron API but cannot require
+// arbitrary local modules. Keep this small deterministic projection here.
+function projectedElapsedSeconds(baseSeconds, sampledAtMs, nowMs) {
+  const base = Math.max(0, Math.floor(Number(baseSeconds) || 0));
+  const sampledAt = Number(sampledAtMs);
+  const now = Number(nowMs);
+  if (!Number.isFinite(sampledAt) || !Number.isFinite(now) || now <= sampledAt) return base;
+  return base + Math.floor((now - sampledAt) / 1000);
+}
 
 contextBridge.exposeInMainWorld('flightcore', {
   probeHost: input => ipcRenderer.invoke('probe-host', input),

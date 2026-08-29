@@ -2,7 +2,7 @@
 
 Native macOS and Windows launcher for the existing FlightCore fresh-install workflow.
 
-Current functional-test source: **1.0.0-test.5**.
+Current functional-test source: **1.0.0-test.6**.
 
 ## User flow
 
@@ -19,11 +19,13 @@ The launcher does not store the Raspberry Pi password. It remembers only the SSH
 
 The embedded installation page runs in a separate sandboxed Electron view without access to the password, SSH connection, Node.js or privileged launcher functions.
 
-Version 1.0.0-test.5 retains the test.3 UI scope: native paste shortcuts and an editable-field context menu, the FlightCore logo throughout, harmonized embedded progress styling, and adaptive window sizing.
+Version 1.0.0-test.6 retains the test.3 UI scope: native paste shortcuts and an editable-field context menu, the FlightCore logo throughout, harmonized embedded progress styling, and adaptive window sizing.
 
 Test.4 corrects the test.3 reboot defect. The public installer runs in a detached transient service that survives the app and SSH session but is not installed or enabled at boot. The canonical FlightCore installer and its post-reboot verifier exclusively own the deliberate Pi reboot.
 
 Test.5 preserves a user-moved window position through every stage transition, removes the unnecessary outer document scrollbar, and shows a native elapsed clock that continues through temporary port-8090 polling interruptions.
+
+Test.6 corrects the test.5 sandboxed-preload packaging defect. The native bridge is now self-contained, and packaged-app validation must prove that the version renders and the installer API initializes before handover.
 
 ## Build paths
 
