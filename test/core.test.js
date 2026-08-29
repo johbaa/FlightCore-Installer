@@ -4,7 +4,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   normalizeHost, normalizeUsername, fingerprintLabel, buildRemoteInstallCommand,
-  redactLine, INSTALLER_URL, progressUrl, firstSetupUrl, classifyInstallerUrl
+  buildRemoteInspectionCommand, parseRemoteInspection, classifyRemoteInspection,
+  progressStateSignature, redactLine, INSTALLER_URL, progressUrl, progressStateUrl,
+  firstSetupUrl, classifyInstallerUrl
 } = require('../src/lib/core');
 
 test('accepts normal Pi addresses and host names', () => {
@@ -27,10 +29,12 @@ test('formats fingerprints and rejects malformed values', () => {
   assert.throws(() => fingerprintLabel('abc'));
 });
 
-test('remote command uses the canonical public installer and fixed quoting', () => {
+test('remote command installs a persistent guarded service from the canonical installer', () => {
   const command = buildRemoteInstallCommand();
-  assert.match(command, new RegExp(INSTALLER_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-  assert.match(command, /sudo -n \/bin\/bash \"\$tmp\"/);
+  assert.ok(command.includes(INSTALLER_URL));
+  assert.match(command, /flightcore-native-installer\.service/);
+  assert.match(command, /ConditionPathExists=!\/etc\/siyi\/release_version/);
+  assert.match(command, /systemctl enable --now/);
   assert.doesNotMatch(command, /password/i);
 });
 
@@ -41,6 +45,7 @@ test('redacts password and token output', () => {
 
 test('builds exact progress and First Setup URLs including IPv6 brackets', () => {
   assert.equal(progressUrl('192.168.1.115'), 'http://192.168.1.115:8090/');
+  assert.equal(progressStateUrl('192.168.1.115'), 'http://192.168.1.115:8090/state');
   assert.equal(firstSetupUrl('192.168.1.115'), 'http://192.168.1.115:8080/first_setup');
   assert.equal(progressUrl('fd00::51'), 'http://[fd00::51]:8090/');
 });
@@ -53,4 +58,28 @@ test('isolates embedded navigation and permits only the exact Pi First Setup han
   assert.equal(classifyInstallerUrl('http://192.168.1.116:8080/first_setup', host), 'blocked');
   assert.equal(classifyInstallerUrl('https://example.com/first_setup', host), 'blocked');
   assert.equal(classifyInstallerUrl('http://user:pass@192.168.1.115:8090/', host), 'blocked');
+});
+
+test('parses authenticated remote release evidence', () => {
+  const report = parseRemoteInspection('VERSION=4.3.0-rc.12\nBUILD=abc123\nSTATUS=accepted\nWEBUI=active\nPOSTINSTALL=inactive\nJOB=inactive\nRESULT=success\n');
+  assert.deepEqual(report, { version: '4.3.0-rc.12', build: 'abc123', status: 'accepted', webui: 'active', postinstall: 'inactive', job: 'inactive', result: 'success' });
+  assert.match(buildRemoteInspectionCommand(), /release_version/);
+});
+
+test('accepts only a complete, active release', () => {
+  assert.equal(classifyRemoteInspection({ version: '4.3.0', build: 'abc', status: 'accepted', webui: 'active', postinstall: 'inactive', job: 'inactive', result: 'success' }), 'accepted');
+  assert.equal(classifyRemoteInspection({ version: '', build: '', status: 'accepted', webui: 'active', postinstall: '', job: 'inactive', result: 'success' }), 'failed');
+});
+
+test('distinguishes a running transaction from terminal failure', () => {
+  assert.equal(classifyRemoteInspection({ version: '', build: '', status: '', webui: 'inactive', postinstall: 'inactive', job: 'active', result: '' }), 'working');
+  assert.equal(classifyRemoteInspection({ version: '', build: '', status: '', webui: 'inactive', postinstall: 'inactive', job: 'failed', result: 'exit-code' }), 'failed');
+});
+
+test('progress heartbeat signatures change only with authoritative fields', () => {
+  const first = progressStateSignature({ status: 'running', progress: 87, elapsed: '05:52', ignored: 1 });
+  const same = progressStateSignature({ status: 'running', progress: 87, elapsed: '05:52', ignored: 2 });
+  const changed = progressStateSignature({ status: 'running', progress: 88, elapsed: '05:53' });
+  assert.equal(first, same);
+  assert.notEqual(first, changed);
 });

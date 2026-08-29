@@ -8,9 +8,14 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <header class="embedded-brandbar hidden" id="embeddedBrandbar">
+    <img src="flightcore-logo.svg" alt="FlightCore">
+    <div><p class="eyebrow">FLIGHTCORE CONTROL PLATFORM</p><strong>Installation progress</strong></div>
+    <span class="status-dot working"><i></i> Securely monitored</span>
+  </header>
   <main class="shell">
     <header class="brandbar">
-      <div class="mark" aria-hidden="true"><span>FC</span></div>
+      <div class="mark"><img src="flightcore-logo.svg" alt="FlightCore"></div>
       <div>
         <p class="eyebrow">FLIGHTCORE CONTROL PLATFORM</p>
         <h1>Fresh installation</h1>
@@ -72,7 +77,7 @@
       </div>
       <div class="handoff hidden" id="handoff">
         <div class="handoff-icon">✓</div>
-        <div><strong>Installation opened in your browser</strong><span>Continue in the existing FlightCore installation interface. Keep this app open until the installer has started successfully.</span></div>
+        <div><strong>FlightCore accepted</strong><span>The installed release and First Setup were verified securely. First Setup is opening in your browser.</span></div>
       </div>
       <details>
         <summary>Technical details</summary>
@@ -81,7 +86,6 @@
       <p class="error" id="runError" role="alert"></p>
       <div class="actions final-actions">
         <button class="secondary hidden" id="logButton" type="button">Show installation log</button>
-        <button class="primary hidden" id="openButton" type="button"><span>Open installation progress</span><b>↗</b></button>
       </div>
     </section>
 

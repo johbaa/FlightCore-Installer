@@ -1,6 +1,6 @@
 # FlightCore Installer — testing and release
 
-## 1.0.0-test.2 acceptance focus
+## 1.0.0-test.3 acceptance focus
 
 - The port-8090 installer remains inside the native application window.
 - The embedded page has no preload, Node.js, SSH, password or privileged installer access.
@@ -9,6 +9,13 @@
 - The app closes after that browser handoff.
 - An SSH stream ending without a numeric exit code after port 8090 is ready is not reported as installation failure.
 - macOS contains the Local Network permission description.
+- Cmd-V on macOS, Ctrl-V on Windows and right-click Paste work in editable connection fields.
+- The FlightCore logo is visible on each native stage and the embedded progress stage.
+- The native window fits the active stage without an unnecessary outer scrollbar.
+- Port 8090 uses the native visual language while remaining in a separate sandboxed view.
+- The Pi installation runs as a persistent guarded systemd transaction and survives an installer-app disconnect or controlled Pi reboot.
+- Frozen or disappearing port-8090 state never counts as success.
+- First Setup opens only after authenticated version, build, accepted status and active WebUI checks pass.
 
 ## Safety boundary
 
@@ -54,10 +61,12 @@ These warnings disappear only after the production apps are signed; the applicat
 - An unknown Pi requires explicit fingerprint confirmation.
 - Reusing the same Pi address shows it as previously trusted.
 - Reimaging the Pi produces a changed-fingerprint warning rather than silently trusting it.
-- The browser opens port 8090 exactly once.
+- Port 8090 loads in the isolated native window and does not open in the external browser.
 - The existing FlightCore progress UI reaches 100%, survives the controlled reboot, and continues to `/first_setup`.
 - The launcher log contains the target and installer output but no password.
 - A failed SSH connection or installer exit produces a clear failure and retains its log.
+- Freeze port-8090 state deliberately and confirm the app reports a failure rather than waiting forever.
+- During a controlled install reboot, confirm monitoring resumes and the guarded transaction does not run again after `/etc/siyi/release_version` is committed.
 
 ## Production signing
 

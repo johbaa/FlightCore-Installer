@@ -1,7 +1,7 @@
 'use strict';
 
 const $ = id => document.getElementById(id);
-const state = { host: '', username: 'pi', password: '', fingerprint: '', progressUrl: '' };
+const state = { host: '', username: 'pi', password: '', fingerprint: '' };
 
 function setStep(step) {
   document.querySelectorAll('.rail-step').forEach(node => {
@@ -12,8 +12,24 @@ function setStep(step) {
   $('railFill').style.width = `${Math.max(0, Math.min(3, step - 1)) * 25}%`;
 }
 
+function fitCurrentPanel(preferred = {}) {
+  requestAnimationFrame(() => {
+    const shell = document.querySelector('.shell');
+    const natural = Math.ceil(shell.scrollHeight + 58);
+    window.flightcore.fitWindow({ width: preferred.width || 780, height: preferred.height || Math.max(660, natural) });
+  });
+}
+
 function show(panel) {
   ['connectPanel', 'trustPanel', 'runPanel'].forEach(id => $(id).classList.toggle('hidden', id !== panel));
+  fitCurrentPanel();
+}
+
+function showEmbeddedHeader(visible) {
+  document.body.classList.toggle('embedded-stage', visible);
+  $('embeddedBrandbar').classList.toggle('hidden', !visible);
+  if (visible) window.flightcore.fitWindow({ width: 900, height: 780 });
+  else fitCurrentPanel();
 }
 
 function busy(button, text) {
@@ -22,6 +38,7 @@ function busy(button, text) {
 }
 
 function appendOutput(text) {
+  if (!text) return;
   const output = $('technicalOutput');
   output.textContent += text;
   if (output.textContent.length > 30000) output.textContent = output.textContent.slice(-30000);
@@ -58,31 +75,32 @@ $('connectForm').addEventListener('submit', async event => {
       $('installButton').querySelector('span').textContent = 'Trust and start installation';
     }
     $('trustCheck').checked = result.trustState === 'trusted';
-    $('installButton').disabled = !($('trustCheck').checked);
+    $('installButton').disabled = !$('trustCheck').checked;
     setStep(2);
     show('trustPanel');
   } catch (error) {
     $('formError').textContent = error.message || String(error);
+    fitCurrentPanel();
   } finally {
     $('connectButton').disabled = false;
     $('connectButton').querySelector('span').textContent = 'Connect and verify';
   }
 });
 
-$('trustCheck').addEventListener('change', () => $('installButton').disabled = !$('trustCheck').checked);
-$('backButton').addEventListener('click', () => { state.password = ''; $('password').value = ''; setStep(1); show('connectPanel'); });
+$('trustCheck').addEventListener('change', () => { $('installButton').disabled = !$('trustCheck').checked; });
+$('backButton').addEventListener('click', () => {
+  state.password = '';
+  $('password').value = '';
+  setStep(1);
+  show('connectPanel');
+});
 $('installButton').addEventListener('click', async () => {
   $('trustError').textContent = '';
   setStep(3);
   show('runPanel');
-  try {
-    await window.flightcore.startInstall(state);
-  } catch (error) {
-    if (!$('runError').textContent) $('runError').textContent = error.message || String(error);
-  }
+  try { await window.flightcore.startInstall(state); }
+  catch (error) { if (!$('runError').textContent) $('runError').textContent = error.message || String(error); }
 });
-
-$('openButton').addEventListener('click', () => window.flightcore.openProgress(state.host));
 $('logButton').addEventListener('click', () => window.flightcore.showLog());
 
 window.flightcore.onEvent(event => {
@@ -93,35 +111,60 @@ window.flightcore.onEvent(event => {
       break;
     case 'connected':
       $('activityTitle').textContent = 'Raspberry Pi connected';
-      $('activityText').textContent = 'Starting the verified public FlightCore installer…';
+      $('activityText').textContent = 'Creating a persistent, restart-safe installation transaction…';
       break;
     case 'installer-started':
       $('activityTitle').textContent = 'FlightCore installer started';
-      $('activityText').textContent = 'Waiting for the existing installation interface on port 8090…';
+      $('activityText').textContent = 'Waiting for the installation interface on port 8090…';
       break;
     case 'output': appendOutput(event.text); break;
     case 'progress-ready':
-      state.progressUrl = event.url;
       state.password = '';
       $('password').value = '';
       setStep(4);
       $('runTitle').textContent = 'Installation in progress';
       $('activityTitle').textContent = 'Installation interface is ready';
-      $('activityText').textContent = 'The FlightCore installation interface is loading securely in this window.';
+      $('activityText').textContent = 'Progress and authenticated release acceptance are being monitored independently.';
+      showEmbeddedHeader(true);
       break;
-    case 'command-ended':
-      appendOutput(`\nSSH launcher ended with code ${event.code ?? 'unknown'}; installation status remains in the embedded interface.\n`);
+    case 'monitor-state': {
+      const remote = event.state || {};
+      const label = remote.stage || remote.message || remote.status;
+      if (label) $('activityText').textContent = String(label);
+      break;
+    }
+    case 'monitor-status':
+      if (event.message) $('activityText').textContent = event.message;
+      break;
+    case 'accepted':
+      showEmbeddedHeader(false);
+      setStep(4);
+      $('spinner').classList.add('hidden');
+      $('runStatus').textContent = 'Accepted';
+      $('runTitle').textContent = 'FlightCore installation accepted';
+      $('handoff').classList.remove('hidden');
+      fitCurrentPanel();
+      break;
+    case 'embedded-hidden':
+      showEmbeddedHeader(false);
       break;
     case 'failed':
+      showEmbeddedHeader(false);
+      show('runPanel');
       $('spinner').classList.add('hidden');
       $('runStatus').textContent = 'Failed';
       $('runStatus').classList.remove('working');
-      $('runTitle').textContent = 'Installation could not be started';
+      $('runTitle').textContent = 'Installation did not complete';
       $('runError').textContent = event.message;
       $('logButton').classList.remove('hidden');
+      fitCurrentPanel();
       break;
   }
 });
 
 window.flightcore.getAppInfo().then(info => { $('version').textContent = `v${info.version}`; });
+window.addEventListener('load', () => fitCurrentPanel());
+window.addEventListener('resize', () => {
+  if (!document.body.classList.contains('embedded-stage')) document.body.classList.toggle('compact', window.innerWidth < 620);
+});
 setStep(1);

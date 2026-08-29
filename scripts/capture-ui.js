@@ -15,9 +15,9 @@ const path = require('node:path');
         previousFingerprintLabel: null
       }),
       startInstall: async () => ({ ok: true }),
-      openProgress: async () => true,
+      fitWindow: async () => true,
       showLog: async () => true,
-      getAppInfo: async () => ({ version: '1.0.0-test.1', platform: 'darwin' }),
+      getAppInfo: async () => ({ version: '1.0.0-test.3', platform: 'darwin' }),
       onEvent: () => () => {}
     };
   });
