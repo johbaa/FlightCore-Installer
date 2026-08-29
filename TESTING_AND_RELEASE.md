@@ -1,6 +1,6 @@
 # FlightCore Installer — testing and release
 
-## 1.0.0-test.4 acceptance focus
+## 1.0.0-test.5 acceptance focus
 
 - The port-8090 installer remains inside the native application window.
 - The embedded page has no preload, Node.js, SSH, password or privileged installer access.
@@ -12,6 +12,8 @@
 - Cmd-V on macOS, Ctrl-V on Windows and right-click Paste work in editable connection fields.
 - The FlightCore logo is visible on each native stage and the embedded progress stage.
 - The native window fits the active stage without an unnecessary outer scrollbar.
+- A user-moved native window keeps its position through Verify, Start and embedded-progress transitions.
+- The embedded-header elapsed clock continues through temporary port-8090 polling interruptions.
 - Port 8090 uses the native visual language while remaining in a separate sandboxed view.
 - The Pi installation runs in a detached transient systemd transaction and survives an installer-app or SSH disconnect.
 - The native launcher unit is never installed or enabled at boot and therefore cannot execute the public installer twice after the canonical installer reboots the Pi.
@@ -70,22 +72,12 @@ These warnings disappear only after the production apps are signed; the applicat
 - Freeze port-8090 state deliberately and confirm the app reports a failure rather than waiting forever.
 - During a controlled install reboot, confirm monitoring resumes and the guarded transaction does not run again after `/etc/siyi/release_version` is committed.
 - Confirm the native transient unit is absent after reboot and the bootstrap log contains exactly one public-installer invocation.
+- Move the app off-center before connecting and confirm no later stage recenters it.
+- Confirm the native shell has no scrollbar when its complete active panel fits the display.
+- Confirm the native elapsed clock continues while port-8090 state is temporarily unchanged or unavailable.
 
-## Production signing
+## Signing status
 
-The production workflow requires these repository secrets:
+Signing is intentionally deferred at this stage. Functional-test and preview-distribution installers remain unsigned and the download page must clearly explain the platform warnings and opening steps.
 
-### Apple
-
-- `MAC_CSC_LINK`: exported Developer ID Application certificate (`.p12`) as a base64 string or secure file reference supported by electron-builder.
-- `MAC_CSC_KEY_PASSWORD`: password for that certificate.
-- `APPLE_ID`: Apple Developer account email.
-- `APPLE_APP_SPECIFIC_PASSWORD`: app-specific Apple password.
-- `APPLE_TEAM_ID`: Apple Developer Team ID.
-
-### Windows
-
-- `WIN_CSC_LINK`: Authenticode certificate (`.pfx`) as a base64 string or secure file reference supported by electron-builder.
-- `WIN_CSC_KEY_PASSWORD`: password for that certificate.
-
-After the secrets exist, publish an `installer-v*` tag. Both signed applications are created and attached to one GitHub release. Publish the download page only after verifying both release files and their signatures.
+No Apple or Windows signing credentials are required for the current preview workflow. Signing may be added later without changing the Pi installation transaction.

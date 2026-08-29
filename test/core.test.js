@@ -6,7 +6,7 @@ const {
   normalizeHost, normalizeUsername, fingerprintLabel, buildRemoteInstallCommand,
   buildRemoteInspectionCommand, parseRemoteInspection, classifyRemoteInspection,
   progressStateSignature, redactLine, INSTALLER_URL, progressUrl, progressStateUrl,
-  firstSetupUrl, classifyInstallerUrl
+  firstSetupUrl, classifyInstallerUrl, clampWindowPosition, projectedElapsedSeconds
 } = require('../src/lib/core');
 
 test('accepts normal Pi addresses and host names', () => {
@@ -85,4 +85,22 @@ test('progress heartbeat signatures change only with authoritative fields', () =
   const changed = progressStateSignature({ status: 'installing', progress: 87, elapsed_seconds: 353, updated_at: '2026-08-29T15:00:01+02:00' });
   assert.equal(first, same);
   assert.notEqual(first, changed);
+});
+
+test('window fitting preserves the user position and clamps only at a display edge', () => {
+  const work = { x: 0, y: 25, width: 1440, height: 850 };
+  assert.deepEqual(
+    clampWindowPosition({ x: 160, y: 90 }, { width: 900, height: 780 }, work),
+    { x: 160, y: 90 }
+  );
+  assert.deepEqual(
+    clampWindowPosition({ x: 1000, y: 400 }, { width: 900, height: 780 }, work),
+    { x: 540, y: 95 }
+  );
+});
+
+test('native elapsed projection continues while remote polling is interrupted', () => {
+  assert.equal(projectedElapsedSeconds(352, 1000, 301000), 652);
+  assert.equal(projectedElapsedSeconds(352, 1000, 500), 352);
+  assert.equal(projectedElapsedSeconds(-1, 1000, 2000), 1);
 });

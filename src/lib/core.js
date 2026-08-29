@@ -132,6 +132,32 @@ function progressStateSignature(state) {
   });
 }
 
+function clampWindowPosition(currentBounds, nextBounds, workArea) {
+  const current = currentBounds || {};
+  const next = nextBounds || {};
+  const work = workArea || {};
+  const workX = Number(work.x) || 0;
+  const workY = Number(work.y) || 0;
+  const workWidth = Math.max(0, Number(work.width) || 0);
+  const workHeight = Math.max(0, Number(work.height) || 0);
+  const nextWidth = Math.max(0, Number(next.width) || 0);
+  const nextHeight = Math.max(0, Number(next.height) || 0);
+  const maximumX = workX + Math.max(0, workWidth - nextWidth);
+  const maximumY = workY + Math.max(0, workHeight - nextHeight);
+  return {
+    x: Math.round(Math.min(maximumX, Math.max(workX, Number(current.x) || 0))),
+    y: Math.round(Math.min(maximumY, Math.max(workY, Number(current.y) || 0)))
+  };
+}
+
+function projectedElapsedSeconds(baseSeconds, sampledAtMs, nowMs) {
+  const base = Math.max(0, Math.floor(Number(baseSeconds) || 0));
+  const sampledAt = Number(sampledAtMs);
+  const now = Number(nowMs);
+  if (!Number.isFinite(sampledAt) || !Number.isFinite(now) || now <= sampledAt) return base;
+  return base + Math.floor((now - sampledAt) / 1000);
+}
+
 function redactLine(line) {
   return String(line || '')
     .replace(/(password\s*[:=]\s*)\S+/ig, '$1[REDACTED]')
@@ -143,5 +169,6 @@ module.exports = {
   REMOTE_BOOTSTRAP, REMOTE_BOOTSTRAP_LOG, normalizeHost, normalizeUsername,
   hostForUrl, progressUrl, progressStateUrl, firstSetupUrl, classifyInstallerUrl,
   fingerprintLabel, buildRemoteInstallCommand, buildRemoteInspectionCommand,
-  parseRemoteInspection, classifyRemoteInspection, progressStateSignature, redactLine
+  parseRemoteInspection, classifyRemoteInspection, progressStateSignature,
+  clampWindowPosition, projectedElapsedSeconds, redactLine
 };

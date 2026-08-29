@@ -27,6 +27,23 @@ test('v3 includes paste support, logos, adaptive sizing and harmonized embedded 
   assert.equal(fs.existsSync(path.join(root, 'src/renderer/flightcore-logo.svg')), true);
 });
 
+test('test.5 preserves window position, removes outer scrolling and owns a live elapsed clock', () => {
+  const main = read('src/main.js');
+  const renderer = read('src/renderer/renderer.js');
+  const styles = read('src/renderer/styles.css');
+  const html = read('src/renderer/index.html');
+  assert.match(main, /clampWindowPosition/);
+  assert.match(main, /setContentSize\(width, height, false\)/);
+  assert.equal((main.match(/\.center\(\)/g) || []).length, 1);
+  assert.match(main, /if \(initialWindowFit\)/);
+  assert.match(renderer, /lastRemoteSeconds/);
+  assert.match(renderer, /projectedElapsedSeconds/);
+  assert.match(styles, /body\{[^}]*overflow:hidden/);
+  assert.match(styles, /\.shell\{[^}]*overflow-y:auto/);
+  assert.match(html, /id="embeddedElapsed"/);
+  assert.match(main, /#elapsed\{display:none!important\}/);
+});
+
 test('test.4 cannot relaunch the public installer after the Pi reboots', () => {
   const core = read('src/lib/core.js');
   const scope = read('TEST4_CORRECTION.md');
@@ -36,5 +53,5 @@ test('test.4 cannot relaunch the public installer after the Pi reboots', () => {
   assert.doesNotMatch(core, /WantedBy=multi-user\.target/);
   assert.match(scope, /must not relaunch/i);
   assert.match(scope, /frozen/i);
-  assert.equal(require('../package.json').version, '1.0.0-test.4');
+  assert.equal(require('../package.json').version, '1.0.0-test.5');
 });

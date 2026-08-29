@@ -11,8 +11,8 @@ const {
   PROGRESS_PORT, REMOTE_UNIT, REMOTE_ROOT, REMOTE_BOOTSTRAP_LOG,
   normalizeHost, normalizeUsername, fingerprintLabel, buildRemoteInstallCommand,
   buildRemoteInspectionCommand, parseRemoteInspection, classifyRemoteInspection,
-  progressStateSignature, redactLine, progressUrl, progressStateUrl, firstSetupUrl,
-  classifyInstallerUrl
+  progressStateSignature, clampWindowPosition, redactLine, progressUrl,
+  progressStateUrl, firstSetupUrl, classifyInstallerUrl
 } = require('./lib/core');
 
 const EMBEDDED_HEADER_HEIGHT = 82;
@@ -29,6 +29,7 @@ let progressView = null;
 let activeHost = '';
 let activeCredentials = null;
 let firstSetupHandoffStarted = false;
+let initialWindowFit = true;
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -52,13 +53,26 @@ function hideEmbeddedProgress() {
 
 function fitWindow(request = {}) {
   if (!mainWindow || mainWindow.isDestroyed()) return;
-  const display = screen.getDisplayMatching(mainWindow.getBounds());
-  const work = display.workAreaSize;
-  const width = Math.min(work.width, Math.max(680, Math.ceil(Number(request.width) || 760)));
-  const height = Math.min(work.height, Math.max(620, Math.ceil(Number(request.height) || 720)));
-  mainWindow.setMinimumSize(Math.min(680, work.width), Math.min(620, work.height));
-  mainWindow.setContentSize(width, height, true);
-  mainWindow.center();
+  const currentBounds = mainWindow.getBounds();
+  const [currentContentWidth, currentContentHeight] = mainWindow.getContentSize();
+  const frameWidth = Math.max(0, currentBounds.width - currentContentWidth);
+  const frameHeight = Math.max(0, currentBounds.height - currentContentHeight);
+  const work = screen.getDisplayMatching(currentBounds).workArea;
+  const maximumContentWidth = Math.max(320, work.width - frameWidth);
+  const maximumContentHeight = Math.max(320, work.height - frameHeight);
+  const width = Math.min(maximumContentWidth, Math.max(680, Math.ceil(Number(request.width) || 760)));
+  const height = Math.min(maximumContentHeight, Math.max(620, Math.ceil(Number(request.height) || 720)));
+  mainWindow.setMinimumSize(Math.min(680 + frameWidth, work.width), Math.min(620 + frameHeight, work.height));
+  mainWindow.setContentSize(width, height, false);
+  if (initialWindowFit) {
+    mainWindow.center();
+    initialWindowFit = false;
+  } else {
+    const nextBounds = mainWindow.getBounds();
+    const position = clampWindowPosition(currentBounds, nextBounds, work);
+    if (position.x !== nextBounds.x || position.y !== nextBounds.y) mainWindow.setPosition(position.x, position.y, false);
+  }
+  resizeProgressView();
 }
 
 function installApplicationMenu() {
@@ -102,7 +116,7 @@ function embeddedCss() {
     h1,h2,h3,strong,label,summary{color:var(--fc-text)!important}p,span,small{color:var(--fc-muted)}
     button{border:0!important;border-radius:10px!important;background:linear-gradient(135deg,#147be9,#299cff)!important;color:white!important;font-weight:800!important;padding:12px 18px!important}
     input,select,textarea,pre{border:1px solid var(--fc-border)!important;border-radius:10px!important;background:#071423!important;color:white!important}
-    progress{accent-color:var(--fc-blue)!important;width:100%!important}a{color:#67baff!important}
+    #elapsed{display:none!important}progress{accent-color:var(--fc-blue)!important;width:100%!important}a{color:#67baff!important}
     @media(max-width:700px){body{padding:12px!important}body>main,body>.container,body>.wrap,body>.card{padding:18px!important}}
   `;
 }
@@ -145,6 +159,7 @@ function showEmbeddedProgress(host) {
 
 function createWindow() {
   const capturePath = process.env.FLIGHTCORE_CAPTURE_UI || '';
+  initialWindowFit = true;
   mainWindow = new BrowserWindow({
     width: 780, height: 760, minWidth: 680, minHeight: 620,
     backgroundColor: '#07111f', title: 'FlightCore Installer', show: false,

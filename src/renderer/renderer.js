@@ -2,6 +2,46 @@
 
 const $ = id => document.getElementById(id);
 const state = { host: '', username: 'pi', password: '', fingerprint: '' };
+const elapsedClock = { baseSeconds: 0, sampledAtMs: 0, lastRemoteSeconds: null, running: false };
+
+function formatElapsed(seconds) {
+  const value = Math.max(0, Math.floor(Number(seconds) || 0));
+  return `Elapsed ${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
+}
+
+function displayedElapsed(nowMs = Date.now()) {
+  if (!elapsedClock.running) return elapsedClock.baseSeconds;
+  return window.flightcore.projectedElapsedSeconds(elapsedClock.baseSeconds, elapsedClock.sampledAtMs, nowMs);
+}
+
+function renderElapsed(nowMs = Date.now()) {
+  $('embeddedElapsed').textContent = formatElapsed(displayedElapsed(nowMs));
+}
+
+function startElapsedClock() {
+  elapsedClock.baseSeconds = 0;
+  elapsedClock.sampledAtMs = Date.now();
+  elapsedClock.lastRemoteSeconds = null;
+  elapsedClock.running = true;
+  renderElapsed();
+}
+
+function syncElapsedClock(remoteState) {
+  const now = Date.now();
+  const value = Number(remoteState?.elapsed_seconds ?? remoteState?.elapsed);
+  if (Number.isFinite(value) && value >= 0 && (elapsedClock.lastRemoteSeconds === null || value > elapsedClock.lastRemoteSeconds)) {
+    elapsedClock.baseSeconds = Math.max(Math.floor(value), displayedElapsed(now));
+    elapsedClock.sampledAtMs = now;
+    elapsedClock.lastRemoteSeconds = value;
+  }
+  const status = String(remoteState?.status || '').toLowerCase();
+  if (/complete|completed|success|done|fail|error|rollback/.test(status)) {
+    elapsedClock.baseSeconds = displayedElapsed(now);
+    elapsedClock.sampledAtMs = now;
+    elapsedClock.running = false;
+  }
+  renderElapsed(now);
+}
 
 function setStep(step) {
   document.querySelectorAll('.rail-step').forEach(node => {
@@ -15,7 +55,7 @@ function setStep(step) {
 function fitCurrentPanel(preferred = {}) {
   requestAnimationFrame(() => {
     const shell = document.querySelector('.shell');
-    const natural = Math.ceil(shell.scrollHeight + 58);
+    const natural = Math.ceil(shell.scrollHeight + 2);
     window.flightcore.fitWindow({ width: preferred.width || 780, height: preferred.height || Math.max(660, natural) });
   });
 }
@@ -125,10 +165,12 @@ window.flightcore.onEvent(event => {
       $('runTitle').textContent = 'Installation in progress';
       $('activityTitle').textContent = 'Installation interface is ready';
       $('activityText').textContent = 'Progress and authenticated release acceptance are being monitored independently.';
+      startElapsedClock();
       showEmbeddedHeader(true);
       break;
     case 'monitor-state': {
       const remote = event.state || {};
+      syncElapsedClock(remote);
       const label = remote.stage || remote.message || remote.status;
       if (label) $('activityText').textContent = String(label);
       break;
@@ -163,6 +205,7 @@ window.flightcore.onEvent(event => {
 });
 
 window.flightcore.getAppInfo().then(info => { $('version').textContent = `v${info.version}`; });
+setInterval(() => { if (elapsedClock.running) renderElapsed(); }, 1000);
 window.addEventListener('load', () => fitCurrentPanel());
 window.addEventListener('resize', () => {
   if (!document.body.classList.contains('embedded-stage')) document.body.classList.toggle('compact', window.innerWidth < 620);
