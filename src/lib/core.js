@@ -73,7 +73,8 @@ function buildRemoteInstallCommand() {
     '# A transient unit survives the app and SSH session, but is not installed or enabled at boot.',
     '# The canonical installer exclusively owns its deliberate reboot and post-reboot verifier.',
     'sudo -n systemctl reset-failed "$unit" >/dev/null 2>&1 || true',
-    'sudo -n systemd-run --unit="$unit" --collect --no-block --property=Type=exec --property=TimeoutStartSec=infinity --property="StandardOutput=append:$log" --property="StandardError=append:$log" /bin/bash "$script" >/dev/null',
+    '# Keep the Pi responsive to systemd and its hardware watchdog during native compilation.',
+    'sudo -n systemd-run --unit="$unit" --collect --no-block --property=Type=exec --property=TimeoutStartSec=infinity --property=Nice=10 --property="StandardOutput=append:$log" --property="StandardError=append:$log" /bin/bash "$script" >/dev/null',
     'state=""',
     'for _try in $(seq 1 50); do',
     '  state="$(sudo -n systemctl is-active "$unit" 2>/dev/null || true)"',
@@ -89,21 +90,26 @@ function buildRemoteInspectionCommand() {
   return [
     'set +e',
     'read_first(){ for f in "$@"; do if sudo -n test -s "$f"; then sudo -n head -n 1 "$f"; return; fi; done; }',
+    'latest_log="$(find /home/pi -maxdepth 1 -type f -name "siyi_install_*.log" -printf "%T@ %p\\n" 2>/dev/null | sort -nr | head -n 1 | cut -d" " -f2-)"',
+    'log_age=""',
+    'if test -n "$latest_log" && test -f "$latest_log"; then now="$(date +%s)"; modified="$(stat -c %Y "$latest_log" 2>/dev/null)"; test -n "$modified" && log_age="$((now-modified))"; fi',
     'printf "VERSION=%s\\n" "$(read_first /etc/siyi/release_version)"',
     'printf "BUILD=%s\\n" "$(read_first /etc/siyi/release_build /etc/siyi/build_id /etc/siyi/build)"',
     'printf "STATUS=%s\\n" "$(read_first /etc/siyi/release_status /etc/siyi/install_status /var/lib/siyi/release_status)"',
     'printf "WEBUI=%s\\n" "$(sudo -n systemctl is-active siyi-webui 2>/dev/null || true)"',
     'printf "POSTINSTALL=%s\\n" "$(sudo -n systemctl is-active siyi-postinstall-verify.service 2>/dev/null || true)"',
     `printf "JOB=%s\\n" "$(sudo -n systemctl is-active ${REMOTE_UNIT} 2>/dev/null || true)"`,
-    `printf "RESULT=%s\\n" "$(sudo -n systemctl show ${REMOTE_UNIT} -p Result --value 2>/dev/null || true)"`
+    `printf "RESULT=%s\\n" "$(sudo -n systemctl show ${REMOTE_UNIT} -p Result --value 2>/dev/null || true)"`,
+    'printf "BOOT_ID=%s\\n" "$(cat /proc/sys/kernel/random/boot_id 2>/dev/null)"',
+    'printf "LOG_AGE=%s\\n" "$log_age"'
   ].join('\n');
 }
 
 function parseRemoteInspection(text) {
-  const result = { version: '', build: '', status: '', webui: '', postinstall: '', job: '', result: '' };
-  const keys = { VERSION: 'version', BUILD: 'build', STATUS: 'status', WEBUI: 'webui', POSTINSTALL: 'postinstall', JOB: 'job', RESULT: 'result' };
+  const result = { version: '', build: '', status: '', webui: '', postinstall: '', job: '', result: '', bootId: '', logAge: '' };
+  const keys = { VERSION: 'version', BUILD: 'build', STATUS: 'status', WEBUI: 'webui', POSTINSTALL: 'postinstall', JOB: 'job', RESULT: 'result', BOOT_ID: 'bootId', LOG_AGE: 'logAge' };
   for (const line of String(text || '').split(/\r?\n/)) {
-    const match = line.match(/^([A-Z]+)=(.*)$/);
+    const match = line.match(/^([A-Z_]+)=(.*)$/);
     if (match && keys[match[1]]) result[keys[match[1]]] = match[2].trim();
   }
   return result;
@@ -119,7 +125,11 @@ function classifyRemoteInspection(report) {
   if (report.job === 'failed') return 'failed';
   if (report.result && !['success', ''].includes(report.result)) return 'failed';
   if (['active', 'activating'].includes(report.job) || ['active', 'activating'].includes(report.postinstall) || report.status === 'pending_reboot') return 'working';
-  if (!report.version && !report.status && ['', 'inactive', 'unknown', 'failed'].includes(report.job)) return 'failed';
+  const logAgeText = String(report.logAge ?? '').trim();
+  const logAge = Number(logAgeText);
+  if (logAgeText && Number.isFinite(logAge) && logAge >= 0 && logAge <= 120) return 'working';
+  // An empty snapshot immediately after a reboot is transitional, not proof of
+  // failure. Only explicit terminal evidence above may produce "failed".
   return 'incomplete';
 }
 

@@ -20,6 +20,7 @@ const PROGRESS_READY_TIMEOUT_MS = 120000;
 const INSTALL_TIMEOUT_MS = 30 * 60 * 1000;
 const STATE_STALE_MS = 20000;
 const REBOOT_GRACE_MS = 5 * 60 * 1000;
+const AUTH_INSPECTION_INTERVAL_MS = 15000;
 
 let mainWindow;
 let activeClient = null;
@@ -30,8 +31,33 @@ let activeHost = '';
 let activeCredentials = null;
 let firstSetupHandoffStarted = false;
 let initialWindowFit = true;
+let installBootId = '';
+let installStartedAtMs = 0;
+let elapsedTitleTimer = null;
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+function formatElapsed(seconds) {
+  const value = Math.max(0, Math.floor(Number(seconds) || 0));
+  return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
+}
+
+function startElapsedTitleClock() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (!installStartedAtMs) installStartedAtMs = Date.now();
+  const update = () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    mainWindow.setTitle(`FlightCore Installer — Elapsed ${formatElapsed((Date.now() - installStartedAtMs) / 1000)}`);
+  };
+  update();
+  if (!elapsedTitleTimer) elapsedTitleTimer = setInterval(update, 1000);
+}
+
+function stopElapsedTitleClock() {
+  if (elapsedTitleTimer) clearInterval(elapsedTitleTimer);
+  elapsedTitleTimer = null;
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setTitle('FlightCore Installer');
+}
 
 function emit(type, payload = {}) {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('installer-event', { type, ...payload });
@@ -48,6 +74,7 @@ function hideEmbeddedProgress() {
   try { mainWindow.contentView.removeChildView(progressView); } catch {}
   try { progressView.webContents.close(); } catch {}
   progressView = null;
+  stopElapsedTitleClock();
   emit('embedded-hidden');
 }
 
@@ -116,7 +143,7 @@ function embeddedCss() {
     h1,h2,h3,strong,label,summary{color:var(--fc-text)!important}p,span,small{color:var(--fc-muted)}
     button{border:0!important;border-radius:10px!important;background:linear-gradient(135deg,#147be9,#299cff)!important;color:white!important;font-weight:800!important;padding:12px 18px!important}
     input,select,textarea,pre{border:1px solid var(--fc-border)!important;border-radius:10px!important;background:#071423!important;color:white!important}
-    #elapsed{display:none!important}progress{accent-color:var(--fc-blue)!important;width:100%!important}a{color:#67baff!important}
+    #elapsed{visibility:hidden!important}progress{accent-color:var(--fc-blue)!important;width:100%!important}a{color:#67baff!important}
     @media(max-width:700px){body{padding:12px!important}body>main,body>.container,body>.wrap,body>.card{padding:18px!important}}
   `;
 }
@@ -151,7 +178,8 @@ function showEmbeddedProgress(host) {
   progressView.webContents.on('did-finish-load', () => { progressView?.webContents.insertCSS(embeddedCss()).catch(() => {}); });
   mainWindow.contentView.addChildView(progressView);
   resizeProgressView();
-  emit('embedded-visible');
+  startElapsedTitleClock();
+  emit('embedded-visible', { elapsedSeconds: Math.floor((Date.now() - installStartedAtMs) / 1000) });
   const url = progressUrl(activeHost);
   appendLog(`Loading isolated embedded progress UI: ${url}`);
   progressView.webContents.loadURL(url);
@@ -351,8 +379,14 @@ async function appendRemoteFailureEvidence() {
     'set +e',
     `echo '--- ${REMOTE_BOOTSTRAP_LOG} ---'`,
     `sudo -n tail -n 180 '${REMOTE_BOOTSTRAP_LOG}' 2>&1`,
+    'latest_log="$(find /home/pi -maxdepth 1 -type f -name "siyi_install_*.log" -printf "%T@ %p\\n" 2>/dev/null | sort -nr | head -n 1 | cut -d" " -f2-)"',
+    'echo "--- canonical installer log: ${latest_log:-missing} ---"',
+    'test -n "$latest_log" && tail -n 180 "$latest_log" 2>&1',
     `echo '--- journal ${REMOTE_UNIT} ---'`,
-    `sudo -n journalctl -u '${REMOTE_UNIT}' -n 120 --no-pager 2>&1`
+    `sudo -n journalctl -u '${REMOTE_UNIT}' -n 120 --no-pager 2>&1`,
+    'echo "--- boot evidence ---"',
+    'cat /proc/sys/kernel/random/boot_id 2>/dev/null',
+    'uptime -s 2>/dev/null'
   ].join('\n');
   try {
     const result = await executeSsh(activeCredentials, command, 30000);
@@ -406,6 +440,25 @@ async function monitorInstallation(host) {
   let lastChange = Date.now();
   let outageStarted = 0;
   let completionSeen = false;
+  let completionSeenAt = 0;
+  let rebootObservedAt = 0;
+  let lastInspectionAt = 0;
+
+  const observeInspection = inspection => {
+    const bootId = inspection?.report?.bootId || '';
+    if (installBootId && bootId && bootId !== installBootId && !rebootObservedAt) {
+      rebootObservedAt = Date.now();
+      appendLog(`Authenticated boot identity changed during installation: ${installBootId} -> ${bootId}`);
+    }
+    return inspection;
+  };
+
+  const inspectIfDue = async force => {
+    const now = Date.now();
+    if (!force && now - lastInspectionAt < AUTH_INSPECTION_INTERVAL_MS) return null;
+    lastInspectionAt = now;
+    return observeInspection(await finalizeIfAccepted(host));
+  };
 
   while (Date.now() < deadline && activeRun && !firstSetupHandoffStarted) {
     await delay(2000);
@@ -420,32 +473,50 @@ async function monitorInstallation(host) {
       emit('monitor-state', { state });
       const status = String(state.status || '').toLowerCase();
       if (/fail|error|rollback/.test(status) || state.error) throw new Error(`Remote installer failure: ${state.error || status}.`);
-      if (/complete|completed|success|done/.test(status)) completionSeen = true;
+      if (/complete|completed|success|done/.test(status) && !completionSeen) {
+        completionSeen = true;
+        completionSeenAt = Date.now();
+      }
 
       if (completionSeen) {
-        const result = await finalizeIfAccepted(host);
-        if (result.classification === 'failed' || result.classification === 'incomplete') throw new Error('FlightCore reported completion without a valid accepted release.');
+        const result = await inspectIfDue(false);
+        if (result?.classification === 'failed') throw new Error('FlightCore reported completion with explicit terminal failure evidence.');
+        if (result?.classification !== 'accepted' && Date.now() - completionSeenAt > REBOOT_GRACE_MS) {
+          throw new Error('FlightCore reported completion but did not produce an authenticated accepted release within the verification window.');
+        }
       }
 
       if (Date.now() - lastChange > STATE_STALE_MS) {
-        const result = await finalizeIfAccepted(host);
-        if (result.classification === 'accepted') return;
-        throw new Error('FlightCore installation stopped updating on port 8090. The installer did not accept an incomplete or frozen release.');
+        const result = await inspectIfDue(false);
+        if (result?.classification === 'accepted') return;
+        if (result?.classification === 'failed') throw new Error('Authenticated Raspberry Pi inspection returned explicit terminal failure evidence.');
+        if (result?.classification === 'working') {
+          emit('monitor-status', { message: 'Installation is still working; detailed progress is temporarily unchanged…' });
+        }
+        if (rebootObservedAt && Date.now() - rebootObservedAt > REBOOT_GRACE_MS) {
+          throw new Error('The Raspberry Pi restarted before FlightCore produced an authenticated accepted release. The installation was interrupted.');
+        }
       }
     } catch (error) {
-      if (/Remote installer failure|stopped updating|without a valid accepted release/.test(error.message)) throw error;
+      if (/Remote installer failure|explicit terminal failure|did not produce an authenticated|restarted before FlightCore/.test(error.message)) throw error;
       if (!outageStarted) outageStarted = Date.now();
       emit('monitor-status', { message: 'Progress interface unavailable; checking the Raspberry Pi securely…' });
       try {
-        const result = await finalizeIfAccepted(host);
-        if (result.classification === 'accepted') return;
-        if (result.classification === 'failed') throw new Error('The authenticated Raspberry Pi status shows that installation failed.');
-        if (result.classification === 'incomplete' && Date.now() - outageStarted > 30000) throw new Error('The progress interface disappeared before FlightCore produced an accepted release.');
+        const result = await inspectIfDue(false);
+        if (result?.classification === 'accepted') return;
+        if (result?.classification === 'failed') throw new Error('Authenticated Raspberry Pi inspection returned explicit terminal failure evidence.');
+        if (result?.classification === 'working') {
+          outageStarted = Date.now();
+          emit('monitor-status', { message: 'Installation is still running securely on the Raspberry Pi…' });
+        }
       } catch (inspectionError) {
-        if (/shows that installation failed|disappeared before/.test(inspectionError.message)) throw inspectionError;
+        if (/explicit terminal failure/.test(inspectionError.message)) throw inspectionError;
         appendLog(`Transient monitoring interruption: ${inspectionError.message}`);
       }
-      if (Date.now() - outageStarted > REBOOT_GRACE_MS) throw new Error('The Raspberry Pi did not return after the installation restart window.');
+      if (rebootObservedAt && Date.now() - rebootObservedAt > REBOOT_GRACE_MS) {
+        throw new Error('The Raspberry Pi restarted before FlightCore produced an authenticated accepted release. The installation was interrupted.');
+      }
+      if (Date.now() - outageStarted > REBOOT_GRACE_MS) throw new Error('The Raspberry Pi did not return within the installation recovery window.');
     }
   }
   if (!firstSetupHandoffStarted) throw new Error('FlightCore installation exceeded the 30-minute safety limit.');
@@ -470,6 +541,8 @@ async function runInstall(input) {
   if (!password) throw new Error('Enter the Raspberry Pi password.');
   fingerprintLabel(fingerprint);
   activeRun = true;
+  installBootId = '';
+  installStartedAtMs = Date.now();
   firstSetupHandoffStarted = false;
   activeCredentials = { host, username, password, fingerprint };
   const logPath = beginLog(host, username);
@@ -487,6 +560,13 @@ async function runInstall(input) {
     if (launcher.code !== 0) throw new Error(`The detached FlightCore installer could not be started (exit ${launcher.code ?? 'unknown'}).`);
     emit('installer-started');
     appendLog('Transient detached installer service started; canonical installer owns reboot continuation.');
+    try {
+      const baseline = await inspectRemote();
+      installBootId = baseline.report.bootId || '';
+      if (installBootId) appendLog(`Authenticated installation boot identity: ${installBootId}`);
+    } catch (error) {
+      appendLog(`Initial boot identity capture deferred: ${error.message}`);
+    }
 
     const ready = await waitForPort(host, PROGRESS_PORT, PROGRESS_READY_TIMEOUT_MS);
     if (!ready) {
@@ -495,7 +575,7 @@ async function runInstall(input) {
       throw new Error('The FlightCore installation interface did not become ready on port 8090.');
     }
 
-    emit('progress-ready', { url: progressUrl(host), embedded: true });
+    emit('progress-ready', { url: progressUrl(host), embedded: true, elapsedSeconds: Math.floor((Date.now() - installStartedAtMs) / 1000) });
     showEmbeddedProgress(host);
     await monitorInstallation(host);
     return { ok: true, logPath };
@@ -514,6 +594,7 @@ app.whenReady().then(() => { installApplicationMenu(); createWindow(); });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 app.on('before-quit', () => {
+  stopElapsedTitleClock();
   if (activeClient) activeClient.end();
   if (progressView) { try { progressView.webContents.close(); } catch {} }
 });

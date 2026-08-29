@@ -18,8 +18,8 @@ function renderElapsed(nowMs = Date.now()) {
   $('embeddedElapsed').textContent = formatElapsed(displayedElapsed(nowMs));
 }
 
-function startElapsedClock() {
-  elapsedClock.baseSeconds = 0;
+function startElapsedClock(initialSeconds = 0) {
+  elapsedClock.baseSeconds = Math.max(0, Math.floor(Number(initialSeconds) || 0));
   elapsedClock.sampledAtMs = Date.now();
   elapsedClock.lastRemoteSeconds = null;
   elapsedClock.running = true;
@@ -165,7 +165,11 @@ window.flightcore.onEvent(event => {
       $('runTitle').textContent = 'Installation in progress';
       $('activityTitle').textContent = 'Installation interface is ready';
       $('activityText').textContent = 'Progress and authenticated release acceptance are being monitored independently.';
-      startElapsedClock();
+      startElapsedClock(event.elapsedSeconds);
+      showEmbeddedHeader(true);
+      break;
+    case 'embedded-visible':
+      if (!elapsedClock.running) startElapsedClock(event.elapsedSeconds);
       showEmbeddedHeader(true);
       break;
     case 'monitor-state': {

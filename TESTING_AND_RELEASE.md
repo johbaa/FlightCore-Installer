@@ -1,6 +1,11 @@
 # FlightCore Installer — testing and release
 
-## 1.0.0-test.6 acceptance focus
+## 1.0.0-test.7 acceptance focus
+
+- Confirm `Elapsed MM:SS` is visible immediately in the embedded header and native title bar and advances once per second while remote progress is unchanged.
+- Confirm compilation-time progress stalls do not cause frequent SSH inspections or premature launcher failure.
+- Confirm an empty authenticated snapshot after reboot remains transitional, while a reboot that never produces acceptance is reported as an interrupted installation after the recovery window.
+- Confirm the user-selected window position, automatic sizing, authenticated First Setup handoff and automatic app closure remain unchanged.
 
 - The port-8090 installer remains inside the native application window.
 - The embedded page has no preload, Node.js, SSH, password or privileged installer access.

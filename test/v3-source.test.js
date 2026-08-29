@@ -41,7 +41,7 @@ test('test.5 preserves window position, removes outer scrolling and owns a live 
   assert.match(styles, /body\{[^}]*overflow:hidden/);
   assert.match(styles, /\.shell\{[^}]*overflow-y:auto/);
   assert.match(html, /id="embeddedElapsed"/);
-  assert.match(main, /#elapsed\{display:none!important\}/);
+  assert.match(main, /#elapsed\{visibility:hidden!important\}/);
 });
 
 test('test.6 sandboxed preload contains no unsupported local module import', () => {
@@ -49,6 +49,19 @@ test('test.6 sandboxed preload contains no unsupported local module import', () 
   assert.doesNotMatch(preload, /require\(['"]\.\//);
   assert.match(preload, /function projectedElapsedSeconds/);
   assert.match(preload, /contextBridge\.exposeInMainWorld/);
+});
+
+test('test.7 keeps elapsed time visible and monitors reboot transitions without a false immediate failure', () => {
+  const main = read('src/main.js');
+  const renderer = read('src/renderer/renderer.js');
+  const core = read('src/lib/core.js');
+  assert.match(main, /setTitle\(`FlightCore Installer — Elapsed/);
+  assert.match(main, /AUTH_INSPECTION_INTERVAL_MS/);
+  assert.match(main, /restarted before FlightCore produced an authenticated accepted release/);
+  assert.match(renderer, /case 'embedded-visible'/);
+  assert.match(core, /BOOT_ID/);
+  assert.match(core, /LOG_AGE/);
+  assert.match(core, /transitional, not proof of/);
 });
 
 test('test.4 cannot relaunch the public installer after the Pi reboots', () => {
@@ -60,5 +73,5 @@ test('test.4 cannot relaunch the public installer after the Pi reboots', () => {
   assert.doesNotMatch(core, /WantedBy=multi-user\.target/);
   assert.match(scope, /must not relaunch/i);
   assert.match(scope, /frozen/i);
-  assert.equal(require('../package.json').version, '1.0.0-test.6');
+  assert.equal(require('../package.json').version, '1.0.0-test.7');
 });

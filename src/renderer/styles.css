@@ -73,8 +73,10 @@ footer{display:flex;justify-content:space-between;color:#5e738a;font-size:10px;l
 .embedded-brandbar{height:82px;display:flex;align-items:center;gap:13px;padding:12px 22px;border-bottom:1px solid #223b57;background:linear-gradient(135deg,#091a2f,#07111f);overflow:hidden}
 .embedded-brandbar img{width:48px;height:48px;object-fit:contain}
 .embedded-brandbar strong{font-size:17px}
+.embedded-title{display:grid;grid-template-columns:auto auto;align-items:center;gap:2px 12px;min-width:0}
+.embedded-title .eyebrow{grid-column:1/-1}
 .embedded-brandbar .status-dot{margin-left:0}
-.elapsed-pill{margin-left:auto;border:1px solid #285074;color:#a8d8ff;background:#0a243c;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:800;white-space:nowrap}
+.elapsed-pill{border:1px solid #285074;color:#a8d8ff;background:#0a243c;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800;white-space:nowrap}
 .embedded-stage{overflow:hidden}
 .embedded-stage .shell{visibility:hidden;height:0;max-height:0;margin:0;padding:0;overflow:hidden}
 @media(max-height:850px){.shell{padding:14px 0 8px}

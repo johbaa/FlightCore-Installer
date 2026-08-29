@@ -36,6 +36,7 @@ test('remote command starts the canonical installer in a transient detached serv
   assert.match(command, /systemd-run/);
   assert.match(command, /--collect/);
   assert.match(command, /--no-block/);
+  assert.match(command, /--property=Nice=10/);
   assert.doesNotMatch(command, /systemctl enable/);
   assert.doesNotMatch(command, /WantedBy=|ConditionPathExists=|Restart=/);
   assert.doesNotMatch(command, /password/i);
@@ -64,9 +65,11 @@ test('isolates embedded navigation and permits only the exact Pi First Setup han
 });
 
 test('parses authenticated remote release evidence', () => {
-  const report = parseRemoteInspection('VERSION=4.3.0-rc.12\nBUILD=abc123\nSTATUS=accepted\nWEBUI=active\nPOSTINSTALL=inactive\nJOB=inactive\nRESULT=success\n');
-  assert.deepEqual(report, { version: '4.3.0-rc.12', build: 'abc123', status: 'accepted', webui: 'active', postinstall: 'inactive', job: 'inactive', result: 'success' });
+  const report = parseRemoteInspection('VERSION=4.3.0-rc.12\nBUILD=abc123\nSTATUS=accepted\nWEBUI=active\nPOSTINSTALL=inactive\nJOB=inactive\nRESULT=success\nBOOT_ID=boot-a\nLOG_AGE=4\n');
+  assert.deepEqual(report, { version: '4.3.0-rc.12', build: 'abc123', status: 'accepted', webui: 'active', postinstall: 'inactive', job: 'inactive', result: 'success', bootId: 'boot-a', logAge: '4' });
   assert.match(buildRemoteInspectionCommand(), /release_version/);
+  assert.match(buildRemoteInspectionCommand(), /BOOT_ID/);
+  assert.match(buildRemoteInspectionCommand(), /LOG_AGE/);
 });
 
 test('accepts only a complete, active release', () => {
@@ -76,6 +79,8 @@ test('accepts only a complete, active release', () => {
 
 test('distinguishes a running transaction from terminal failure', () => {
   assert.equal(classifyRemoteInspection({ version: '', build: '', status: '', webui: 'inactive', postinstall: 'inactive', job: 'active', result: '' }), 'working');
+  assert.equal(classifyRemoteInspection({ version: '', build: '', status: '', webui: 'active', postinstall: 'inactive', job: 'inactive', result: 'success', logAge: '12' }), 'working');
+  assert.equal(classifyRemoteInspection({ version: '', build: '', status: '', webui: 'active', postinstall: 'inactive', job: 'inactive', result: 'success', logAge: '300' }), 'incomplete');
   assert.equal(classifyRemoteInspection({ version: '', build: '', status: '', webui: 'inactive', postinstall: 'inactive', job: 'failed', result: 'exit-code' }), 'failed');
 });
 
