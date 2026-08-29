@@ -2,7 +2,7 @@
 
 Native macOS and Windows launcher for the existing FlightCore fresh-install workflow.
 
-Current functional-test source: **1.0.0-test.7**.
+Current functional-test source: **1.0.0-test.8**.
 
 ## User flow
 
@@ -19,7 +19,9 @@ The launcher does not store the Raspberry Pi password. It remembers only the SSH
 
 The embedded installation page runs in a separate sandboxed Electron view without access to the password, SSH connection, Node.js or privileged launcher functions.
 
-Version 1.0.0-test.7 retains the test.3 UI scope: native paste shortcuts and an editable-field context menu, the FlightCore logo throughout, harmonized embedded progress styling, and adaptive window sizing. It also keeps the user-selected window position, displays a live elapsed clock in both the embedded header and native title bar, and treats empty post-reboot status as transitional until authenticated evidence proves acceptance or failure.
+Version 1.0.0-test.8 retains the test.3 UI scope: native paste shortcuts and an editable-field context menu, the FlightCore logo throughout, harmonized embedded progress styling, and adaptive window sizing. It also keeps the user-selected window position, displays one live elapsed clock in the embedded header, removes outer document scrolling from the embedded progress page, treats empty post-reboot status as transitional until authenticated evidence proves acceptance or failure, and lets the user press Connect and verify once while the Pi is still booting by waiting up to ten minutes for SSH port 22.
+
+Test.8 also limits MAVLink Router's native Ninja build to one compilation job on the 1 GB Raspberry Pi. This directly addresses the repeatable test.6/test.7 restart under peak parallel compilation load while leaving the canonical FlightCore installer, transaction and deliberate reboot ownership unchanged.
 
 Test.4 corrects the test.3 reboot defect. The public installer runs in a detached transient service that survives the app and SSH session but is not installed or enabled at boot. The canonical FlightCore installer and its post-reboot verifier exclusively own the deliberate Pi reboot.
 

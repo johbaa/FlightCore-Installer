@@ -1,8 +1,17 @@
 # FlightCore Installer — testing and release
 
-## 1.0.0-test.7 acceptance focus
+## 1.0.0-test.8 acceptance focus
 
-- Confirm `Elapsed MM:SS` is visible immediately in the embedded header and native title bar and advances once per second while remote progress is unchanged.
+- With the Pi powered off, enter the intended address and password and press Connect and verify once.
+- Confirm the button and connection status show a live Waiting for SSH countdown without repeated authentication attempts.
+- Power on a freshly imaged Pi and confirm the same pending action automatically advances to SSH identity verification when port 22 becomes ready.
+- Confirm a wrong password fails immediately after SSH becomes ready, while a still-booting or temporarily refused SSH service continues waiting for up to ten minutes.
+- Reconfirm the elapsed timer, window position, reboot monitoring, authenticated First Setup handoff and automatic app closure.
+
+- Confirm exactly one `Elapsed MM:SS` display is visible in the embedded header, with no second timer in the native title bar, and that it advances once per second while remote progress is unchanged.
+- Confirm the embedded progress page has no outer document scrollbar; Technical details retains its own internal scrollbar when required.
+- Confirm the MAVLink Router build advances beyond the former `[14/25]` reset point and the Pi does not restart before the canonical deliberate reboot.
+- Confirm the diagnostic log shows the fresh-install Ninja wrapper uses `-j1` and exists only in `/run`.
 - Confirm compilation-time progress stalls do not cause frequent SSH inspections or premature launcher failure.
 - Confirm an empty authenticated snapshot after reboot remains transitional, while a reboot that never produces acceptance is reported as an interrupted installation after the recovery window.
 - Confirm the user-selected window position, automatic sizing, authenticated First Setup handoff and automatic app closure remain unchanged.
@@ -79,7 +88,7 @@ These warnings disappear only after the production apps are signed; the applicat
 - Confirm the native transient unit is absent after reboot and the bootstrap log contains exactly one public-installer invocation.
 - Move the app off-center before connecting and confirm no later stage recenters it.
 - Confirm the native shell has no scrollbar when its complete active panel fits the display.
-- Confirm the native elapsed clock continues while port-8090 state is temporarily unchanged or unavailable.
+- Confirm the single embedded-header elapsed clock continues while port-8090 state is temporarily unchanged or unavailable.
 
 ## Signing status
 

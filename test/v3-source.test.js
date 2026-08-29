@@ -51,17 +51,39 @@ test('test.6 sandboxed preload contains no unsupported local module import', () 
   assert.match(preload, /contextBridge\.exposeInMainWorld/);
 });
 
-test('test.7 keeps elapsed time visible and monitors reboot transitions without a false immediate failure', () => {
+test('test.7 reboot evidence remains authenticated without retaining its duplicate title clock', () => {
   const main = read('src/main.js');
   const renderer = read('src/renderer/renderer.js');
   const core = read('src/lib/core.js');
-  assert.match(main, /setTitle\(`FlightCore Installer — Elapsed/);
+  assert.doesNotMatch(main, /FlightCore Installer — Elapsed/);
   assert.match(main, /AUTH_INSPECTION_INTERVAL_MS/);
   assert.match(main, /restarted before FlightCore produced an authenticated accepted release/);
   assert.match(renderer, /case 'embedded-visible'/);
   assert.match(core, /BOOT_ID/);
   assert.match(core, /LOG_AGE/);
   assert.match(core, /transitional, not proof of/);
+});
+
+test('test.8 waits once for SSH readiness, owns one clock and limits native build load', () => {
+  const main = read('src/main.js');
+  const renderer = read('src/renderer/renderer.js');
+  const html = read('src/renderer/index.html');
+  const core = read('src/lib/core.js');
+  assert.match(main, /SSH_READY_TIMEOUT_MS = 10 \* 60 \* 1000/);
+  assert.match(main, /async function waitForSshReady/);
+  assert.match(main, /probePort\(host, 22, 1200\)/);
+  assert.match(main, /emit\('ssh-waiting'/);
+  assert.match(main, /emit\('ssh-ready'/);
+  assert.match(main, /password was not accepted[^\n]+return false/);
+  assert.match(renderer, /case 'ssh-waiting'/);
+  assert.match(renderer, /Waiting for SSH —/);
+  assert.match(html, /app will wait for SSH/);
+  assert.match(renderer, /startElapsedClock/);
+  assert.equal((html.match(/id="embeddedElapsed"/g) || []).length, 1);
+  assert.doesNotMatch(main, /FlightCore Installer — Elapsed/);
+  assert.match(main, /body\{[^}]*overflow:hidden!important/);
+  assert.doesNotMatch(main, /min-height:100vh/);
+  assert.match(core, /exec \/usr\/bin\/ninja -j1/);
 });
 
 test('test.4 cannot relaunch the public installer after the Pi reboots', () => {
@@ -73,5 +95,5 @@ test('test.4 cannot relaunch the public installer after the Pi reboots', () => {
   assert.doesNotMatch(core, /WantedBy=multi-user\.target/);
   assert.match(scope, /must not relaunch/i);
   assert.match(scope, /frozen/i);
-  assert.equal(require('../package.json').version, '1.0.0-test.7');
+  assert.equal(require('../package.json').version, '1.0.0-test.8');
 });

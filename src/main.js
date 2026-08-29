@@ -21,6 +21,8 @@ const INSTALL_TIMEOUT_MS = 30 * 60 * 1000;
 const STATE_STALE_MS = 20000;
 const REBOOT_GRACE_MS = 5 * 60 * 1000;
 const AUTH_INSPECTION_INTERVAL_MS = 15000;
+const SSH_READY_TIMEOUT_MS = 10 * 60 * 1000;
+const SSH_READY_POLL_MS = 2000;
 
 let mainWindow;
 let activeClient = null;
@@ -33,31 +35,8 @@ let firstSetupHandoffStarted = false;
 let initialWindowFit = true;
 let installBootId = '';
 let installStartedAtMs = 0;
-let elapsedTitleTimer = null;
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-function formatElapsed(seconds) {
-  const value = Math.max(0, Math.floor(Number(seconds) || 0));
-  return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
-}
-
-function startElapsedTitleClock() {
-  if (!mainWindow || mainWindow.isDestroyed()) return;
-  if (!installStartedAtMs) installStartedAtMs = Date.now();
-  const update = () => {
-    if (!mainWindow || mainWindow.isDestroyed()) return;
-    mainWindow.setTitle(`FlightCore Installer — Elapsed ${formatElapsed((Date.now() - installStartedAtMs) / 1000)}`);
-  };
-  update();
-  if (!elapsedTitleTimer) elapsedTitleTimer = setInterval(update, 1000);
-}
-
-function stopElapsedTitleClock() {
-  if (elapsedTitleTimer) clearInterval(elapsedTitleTimer);
-  elapsedTitleTimer = null;
-  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setTitle('FlightCore Installer');
-}
 
 function emit(type, payload = {}) {
   if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('installer-event', { type, ...payload });
@@ -74,7 +53,6 @@ function hideEmbeddedProgress() {
   try { mainWindow.contentView.removeChildView(progressView); } catch {}
   try { progressView.webContents.close(); } catch {}
   progressView = null;
-  stopElapsedTitleClock();
   emit('embedded-hidden');
 }
 
@@ -136,9 +114,10 @@ function embeddedCss() {
   const logo = fs.readFileSync(logoPath).toString('base64');
   return `
     :root{color-scheme:dark!important;--fc-bg:#07111f;--fc-panel:#0b192b;--fc-border:#29425f;--fc-text:#edf5ff;--fc-muted:#9eb0c5;--fc-blue:#278cff}
-    html,body{background:radial-gradient(circle at 18% 0%,#12325a 0,transparent 33%),linear-gradient(145deg,#06101d,#091525 55%,#06101b)!important;color:var(--fc-text)!important;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif!important}
-    body{margin:0!important;padding:24px!important;min-height:100vh!important;overflow:auto!important}
-    body>main,body>.container,body>.wrap,body>.card{width:min(920px,100%)!important;margin:0 auto!important;border:1px solid var(--fc-border)!important;border-radius:18px!important;background:linear-gradient(160deg,rgba(15,32,53,.98),rgba(8,22,38,.98))!important;box-shadow:0 24px 70px rgba(0,0,0,.38)!important;padding:28px!important}
+    *,*:before,*:after{box-sizing:border-box!important}
+    html,body{background:radial-gradient(circle at 18% 0%,#12325a 0,transparent 33%),linear-gradient(145deg,#06101d,#091525 55%,#06101b)!important;color:var(--fc-text)!important;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif!important;height:100%!important;min-height:0!important}
+    body{margin:0!important;padding:24px!important;height:100vh!important;min-height:0!important;overflow:hidden!important}
+    body>main,body>.container,body>.wrap,body>.card{width:min(920px,100%)!important;height:100%!important;max-height:100%!important;overflow:hidden!important;margin:0 auto!important;border:1px solid var(--fc-border)!important;border-radius:18px!important;background:linear-gradient(160deg,rgba(15,32,53,.98),rgba(8,22,38,.98))!important;box-shadow:0 24px 70px rgba(0,0,0,.38)!important;padding:28px!important}
     body>main:before,body>.container:before,body>.wrap:before,body>.card:before{content:"";display:block;width:46px;height:46px;margin:0 0 12px;background:url("data:image/svg+xml;base64,${logo}") center/contain no-repeat}
     h1,h2,h3,strong,label,summary{color:var(--fc-text)!important}p,span,small{color:var(--fc-muted)}
     button{border:0!important;border-radius:10px!important;background:linear-gradient(135deg,#147be9,#299cff)!important;color:white!important;font-weight:800!important;padding:12px 18px!important}
@@ -178,7 +157,6 @@ function showEmbeddedProgress(host) {
   progressView.webContents.on('did-finish-load', () => { progressView?.webContents.insertCSS(embeddedCss()).catch(() => {}); });
   mainWindow.contentView.addChildView(progressView);
   resizeProgressView();
-  startElapsedTitleClock();
   emit('embedded-visible', { elapsedSeconds: Math.floor((Date.now() - installStartedAtMs) / 1000) });
   const url = progressUrl(activeHost);
   appendLog(`Loading isolated embedded progress UI: ${url}`);
@@ -269,11 +247,7 @@ function friendlySshError(error) {
   return new Error(raw);
 }
 
-function probeFingerprint(input) {
-  const host = normalizeHost(input.host);
-  const username = normalizeUsername(input.username);
-  const password = String(input.password || '');
-  if (!password) throw new Error('Enter the Raspberry Pi password.');
+function probeFingerprintOnce({ host, username, password }) {
   return new Promise((resolve, reject) => {
     const client = new Client();
     let digest = null;
@@ -292,6 +266,43 @@ function probeFingerprint(input) {
     client.on('error', finish);
     client.connect(connectionOptions({ host, username, password, hostVerifier: hash => { digest = String(hash).toLowerCase(); return true; } }));
   });
+}
+
+function retryableSshReadinessError(error) {
+  const message = error?.message || String(error);
+  if (/password was not accepted|address could not be found/i.test(message)) return false;
+  return /did not answer|refused the SSH connection|not reachable|ECONNRESET|socket|handshake|connection lost/i.test(message);
+}
+
+async function waitForSshReady(host, deadline) {
+  while (Date.now() < deadline) {
+    if (await probePort(host, 22, 1200)) return;
+    const remainingSeconds = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+    emit('ssh-waiting', { remainingSeconds });
+    await delay(Math.min(SSH_READY_POLL_MS, Math.max(0, deadline - Date.now())));
+  }
+  throw new Error('SSH did not become ready within 10 minutes. Check the Raspberry Pi address, power, network connection and SSH setting, then press Connect and verify again.');
+}
+
+async function probeFingerprint(input) {
+  const host = normalizeHost(input.host);
+  const username = normalizeUsername(input.username);
+  const password = String(input.password || '');
+  if (!password) throw new Error('Enter the Raspberry Pi password.');
+  const deadline = Date.now() + SSH_READY_TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
+    await waitForSshReady(host, deadline);
+    emit('ssh-ready');
+    try {
+      return await probeFingerprintOnce({ host, username, password });
+    } catch (error) {
+      if (!retryableSshReadinessError(error) || Date.now() >= deadline) throw error;
+      emit('ssh-waiting', { remainingSeconds: Math.max(0, Math.ceil((deadline - Date.now()) / 1000)) });
+      await delay(Math.min(SSH_READY_POLL_MS, Math.max(0, deadline - Date.now())));
+    }
+  }
+  throw new Error('SSH did not become ready within 10 minutes. Check the Raspberry Pi address, power, network connection and SSH setting, then press Connect and verify again.');
 }
 
 function verifiedHost(received, approved) {
@@ -594,7 +605,6 @@ app.whenReady().then(() => { installApplicationMenu(); createWindow(); });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 app.on('before-quit', () => {
-  stopElapsedTitleClock();
   if (activeClient) activeClient.end();
   if (progressView) { try { progressView.webContents.close(); } catch {} }
 });

@@ -29,7 +29,7 @@ test('formats fingerprints and rejects malformed values', () => {
   assert.throws(() => fingerprintLabel('abc'));
 });
 
-test('remote command starts the canonical installer in a transient detached service', () => {
+test('remote command starts a load-limited canonical installer in a transient detached service', () => {
   const command = buildRemoteInstallCommand();
   assert.ok(command.includes(INSTALLER_URL));
   assert.match(command, /flightcore-native-installer\.service/);
@@ -37,6 +37,9 @@ test('remote command starts the canonical installer in a transient detached serv
   assert.match(command, /--collect/);
   assert.match(command, /--no-block/);
   assert.match(command, /--property=Nice=10/);
+  assert.match(command, /flightcore-native-installer-bin/);
+  assert.match(command, /exec \/usr\/bin\/ninja -j1/);
+  assert.match(command, /PATH=\$throttle_path/);
   assert.doesNotMatch(command, /systemctl enable/);
   assert.doesNotMatch(command, /WantedBy=|ConditionPathExists=|Restart=/);
   assert.doesNotMatch(command, /password/i);

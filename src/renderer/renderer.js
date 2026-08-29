@@ -77,6 +77,11 @@ function busy(button, text) {
   button.querySelector('span').textContent = text;
 }
 
+function setConnectionStatus(text, waiting = false) {
+  $('connectStatusText').textContent = text;
+  $('connectStatus').classList.toggle('working', waiting);
+}
+
 function appendOutput(text) {
   if (!text) return;
   const output = $('technicalOutput');
@@ -91,7 +96,8 @@ $('connectForm').addEventListener('submit', async event => {
   state.host = $('host').value.trim();
   state.username = $('username').value.trim();
   state.password = $('password').value;
-  busy($('connectButton'), 'Checking connection…');
+  busy($('connectButton'), 'Waiting for SSH…');
+  setConnectionStatus('Waiting for SSH', true);
   try {
     const result = await window.flightcore.probeHost(state);
     state.fingerprint = result.fingerprint;
@@ -124,6 +130,7 @@ $('connectForm').addEventListener('submit', async event => {
   } finally {
     $('connectButton').disabled = false;
     $('connectButton').querySelector('span').textContent = 'Connect and verify';
+    setConnectionStatus('Ready');
   }
 });
 
@@ -145,6 +152,17 @@ $('logButton').addEventListener('click', () => window.flightcore.showLog());
 
 window.flightcore.onEvent(event => {
   switch (event.type) {
+    case 'ssh-waiting': {
+      const seconds = Math.max(0, Math.floor(Number(event.remainingSeconds) || 0));
+      const time = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+      $('connectButton').querySelector('span').textContent = `Waiting for SSH — ${time}`;
+      setConnectionStatus('Waiting for SSH', true);
+      break;
+    }
+    case 'ssh-ready':
+      $('connectButton').querySelector('span').textContent = 'SSH ready — verifying…';
+      setConnectionStatus('SSH ready', true);
+      break;
     case 'run-started':
       $('activityTitle').textContent = 'Connecting securely';
       $('activityText').textContent = `Authenticating with ${event.host}…`;
