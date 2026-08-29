@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:">
+  <title>FlightCore Installer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="brandbar">
+      <div class="mark" aria-hidden="true"><span>FC</span></div>
+      <div>
+        <p class="eyebrow">FLIGHTCORE CONTROL PLATFORM</p>
+        <h1>Fresh installation</h1>
+      </div>
+      <span class="secure-pill">SECURE SSH</span>
+    </header>
+
+    <section class="progress-rail" aria-label="Installation launcher progress">
+      <div class="rail-fill" id="railFill"></div>
+      <div class="rail-step active" data-step="1"><span>1</span><small>Connect</small></div>
+      <div class="rail-step" data-step="2"><span>2</span><small>Verify</small></div>
+      <div class="rail-step" data-step="3"><span>3</span><small>Start</small></div>
+      <div class="rail-step" data-step="4"><span>4</span><small>Browser</small></div>
+    </section>
+
+    <section class="panel" id="connectPanel">
+      <div class="panel-heading">
+        <div>
+          <p class="section-kicker">CONNECT TO THE AIRCRAFT UNIT</p>
+          <h2>Raspberry Pi connection</h2>
+        </div>
+        <span class="status-dot"><i></i> Ready</span>
+      </div>
+      <p class="lead">Enter the address and password for the freshly prepared Raspberry Pi. The password is used only for this connection and is never saved.</p>
+      <form id="connectForm">
+        <label for="host">Raspberry Pi IP address or host name</label>
+        <input id="host" name="host" autocomplete="off" spellcheck="false" placeholder="192.168.1.120" required>
+        <div class="advanced-row">
+          <label for="username">SSH user</label>
+          <input id="username" name="username" autocomplete="username" value="pi" required>
+        </div>
+        <label for="password">Raspberry Pi password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+        <div class="notice"><strong>Before continuing</strong><span>The Pi must be powered on, connected to the same network, and running a supported fresh Raspberry Pi OS image.</span></div>
+        <p class="error" id="formError" role="alert"></p>
+        <button class="primary" id="connectButton" type="submit"><span>Connect and verify</span><b>→</b></button>
+      </form>
+    </section>
+
+    <section class="panel hidden" id="trustPanel">
+      <p class="section-kicker">VERIFY THE RASPBERRY PI</p>
+      <h2 id="trustTitle">Confirm this unit</h2>
+      <p class="lead" id="trustMessage"></p>
+      <div class="fingerprint"><span>SSH fingerprint</span><code id="fingerprint"></code></div>
+      <div class="fingerprint previous hidden" id="previousBlock"><span>Previously trusted</span><code id="previousFingerprint"></code></div>
+      <label class="checkline"><input id="trustCheck" type="checkbox"><span id="trustCheckText">I confirm that this is the intended Raspberry Pi.</span></label>
+      <p class="error" id="trustError" role="alert"></p>
+      <div class="actions"><button class="secondary" id="backButton" type="button">Back</button><button class="primary" id="installButton" type="button" disabled><span>Trust and start installation</span><b>→</b></button></div>
+    </section>
+
+    <section class="panel hidden" id="runPanel">
+      <div class="panel-heading">
+        <div><p class="section-kicker">STARTING FLIGHTCORE</p><h2 id="runTitle">Preparing installation</h2></div>
+        <span class="status-dot working" id="runStatus"><i></i> Working</span>
+      </div>
+      <div class="activity">
+        <div class="spinner" id="spinner"></div>
+        <div><strong id="activityTitle">Connecting securely</strong><span id="activityText">Authenticating with the Raspberry Pi…</span></div>
+      </div>
+      <div class="handoff hidden" id="handoff">
+        <div class="handoff-icon">✓</div>
+        <div><strong>Installation opened in your browser</strong><span>Continue in the existing FlightCore installation interface. Keep this app open until the installer has started successfully.</span></div>
+      </div>
+      <details>
+        <summary>Technical details</summary>
+        <pre id="technicalOutput"></pre>
+      </details>
+      <p class="error" id="runError" role="alert"></p>
+      <div class="actions final-actions">
+        <button class="secondary hidden" id="logButton" type="button">Show installation log</button>
+        <button class="primary hidden" id="openButton" type="button"><span>Open installation progress</span><b>↗</b></button>
+      </div>
+    </section>
+
+    <footer><span>FlightCore Installer <b id="version"></b></span><span>Fresh install • Port 8090 handoff</span></footer>
+  </main>
+  <script src="renderer.js"></script>
+</body>
+</html>
