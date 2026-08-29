@@ -2,7 +2,7 @@
 
 Native macOS and Windows launcher for the existing FlightCore fresh-install workflow.
 
-Current functional-test source: **1.0.0-test.11**.
+Current functional-test source: **1.0.0-test.12**.
 
 ## User flow
 

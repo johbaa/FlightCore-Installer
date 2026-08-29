@@ -1,6 +1,6 @@
 {
   "name": "flightcore-installer",
-  "version": "1.0.0-test.11",
+  "version": "1.0.0-test.12",
   "private": true,
   "description": "Native macOS and Windows launcher for FlightCore fresh installation",
   "main": "src/main.js",

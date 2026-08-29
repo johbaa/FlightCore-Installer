@@ -37,8 +37,9 @@ test('remote command starts a load-limited canonical installer in a transient de
   assert.match(command, /--collect/);
   assert.match(command, /--no-block/);
   assert.match(command, /--property=Nice=10/);
-  assert.match(command, /flightcore-native-installer-ninja-real/);
-  assert.match(command, /exec \/run\/flightcore-native-installer-ninja-real -j1/);
+  assert.match(command, /ninja_real='\$root\/ninja-real'/);
+  assert.match(command, /exec \/var\/lib\/flightcore-native-installer\/ninja-real -j1/);
+  assert.match(command, /ninja-real --version/);
   assert.match(command, /BindReadOnlyPaths=\$ninja_wrapper:\/usr\/bin\/ninja/);
   assert.match(command, /RuntimeWatchdogSec=0/);
   assert.match(command, /RebootWatchdogSec=0/);
