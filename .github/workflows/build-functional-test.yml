@@ -1,10 +1,26 @@
-name: Build functional-test installers
+name: Build installers and publish install site
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - "src/**"
+      - "build-resources/**"
+      - "test/**"
+      - "site/**"
+      - ".github/workflows/build-functional-test.yml"
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: flightcore-installer-pages
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -31,7 +47,7 @@ jobs:
       - run: npm ci
       - run: npm test
 
-      - name: Build unsigned functional-test installer
+      - name: Build unsigned installer
         run: ${{ matrix.command }}
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
@@ -44,3 +60,90 @@ jobs:
             dist/*.exe
           if-no-files-found: error
           retention-days: 14
+
+  publish-site:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download macOS installer
+        uses: actions/download-artifact@v4
+        with:
+          name: flightcore-installer-macos-functional-test
+          path: _downloads/mac
+
+      - name: Download Windows installer
+        uses: actions/download-artifact@v4
+        with:
+          name: flightcore-installer-windows-functional-test
+          path: _downloads/windows
+
+      - name: Assemble FlightCore install site
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          rm -rf _site
+          mkdir -p _site/downloads
+          cp -R site/. _site/
+
+          MAC_SRC="$(find _downloads/mac -type f -name '*.dmg' -print -quit)"
+          WIN_SRC="$(find _downloads/windows -type f -name '*.exe' -print -quit)"
+          test -n "$MAC_SRC"
+          test -n "$WIN_SRC"
+
+          MAC_DST="_site/downloads/FlightCore-Installer-mac-universal.dmg"
+          WIN_DST="_site/downloads/FlightCore-Installer-win-x64.exe"
+          cp "$MAC_SRC" "$MAC_DST"
+          cp "$WIN_SRC" "$WIN_DST"
+
+          INSTALLER_VERSION="$(node -p "require('./package.json').version")"
+          python3 - "$INSTALLER_VERSION" "$MAC_DST" "$WIN_DST" <<'PY'
+          import hashlib, json, pathlib, sys
+          version, mac_path, win_path = sys.argv[1:4]
+          release = json.load(open("site/release.json", encoding="utf-8"))
+
+          def rec(path, public_name):
+              p = pathlib.Path(path)
+              h = hashlib.sha256()
+              with p.open("rb") as f:
+                  for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                      h.update(chunk)
+              return {
+                  "file": f"downloads/{public_name}",
+                  "sha256": h.hexdigest(),
+                  "bytes": p.stat().st_size,
+              }
+
+          manifest = {
+              "schema_version": 1,
+              "installer_version": version,
+              "flightcore_version": release["flightcore_version"],
+              "channel": release["channel"],
+              "unsigned_preview": bool(release.get("unsigned_preview", False)),
+              "mac": rec(mac_path, "FlightCore-Installer-mac-universal.dmg"),
+              "windows": rec(win_path, "FlightCore-Installer-win-x64.exe"),
+          }
+          pathlib.Path("_site/installer-manifest.json").write_text(
+              json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+          )
+          PY
+
+          rm -f _site/release.json
+          touch _site/.nojekyll
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload install site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy install site
+        id: deployment
+        uses: actions/deploy-pages@v4
