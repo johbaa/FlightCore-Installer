@@ -102,13 +102,13 @@ $('connectForm').addEventListener('submit', async event => {
     const result = await window.flightcore.probeHost(state);
     state.fingerprint = result.fingerprint;
     $('fingerprint').textContent = result.fingerprintLabel;
-    $('previousBlock').classList.toggle('hidden', result.trustState !== 'changed');
-    $('previousFingerprint').textContent = result.previousFingerprintLabel || '';
+    $('previousBlock').classList.add('hidden');
+    $('previousFingerprint').textContent = '';
     if (result.trustState === 'changed') {
-      $('trustTitle').textContent = 'The Raspberry Pi identity changed';
-      $('trustMessage').textContent = 'This can be expected after preparing a fresh SD card, but it can also indicate that the address belongs to a different device. Compare the fingerprints before replacing the trusted identity.';
-      $('trustCheckText').textContent = 'I confirm the Raspberry Pi was rebuilt or replaced and I trust this new identity.';
-      $('installButton').querySelector('span').textContent = 'Trust replacement and install';
+      setStep(3);
+      show('runPanel');
+      await window.flightcore.startInstall(state);
+      return;
     } else if (result.trustState === 'trusted') {
       $('trustTitle').textContent = 'Raspberry Pi verified';
       $('trustMessage').textContent = 'The SSH identity matches the unit previously trusted at this address.';
@@ -116,7 +116,7 @@ $('connectForm').addEventListener('submit', async event => {
       $('installButton').querySelector('span').textContent = 'Start installation';
     } else {
       $('trustTitle').textContent = 'Confirm this Raspberry Pi';
-      $('trustMessage').textContent = 'This is the first time FlightCore Installer has seen this unit. Confirm its SSH identity before installation starts.';
+      $('trustMessage').textContent = 'Confirm the Raspberry Pi SSH identity before installation starts.';
       $('trustCheckText').textContent = 'I confirm that this is the intended Raspberry Pi.';
       $('installButton').querySelector('span').textContent = 'Trust and start installation';
     }
@@ -169,7 +169,7 @@ window.flightcore.onEvent(event => {
       break;
     case 'connected':
       $('activityTitle').textContent = 'Raspberry Pi connected';
-      $('activityText').textContent = 'Starting an isolated installation transaction…';
+      $('activityText').textContent = 'Starting the FlightCore installation…';
       break;
     case 'installer-started':
       $('activityTitle').textContent = 'FlightCore installer started';
@@ -182,7 +182,7 @@ window.flightcore.onEvent(event => {
       setStep(4);
       $('runTitle').textContent = 'Installation in progress';
       $('activityTitle').textContent = 'Installation interface is ready';
-      $('activityText').textContent = 'Progress and authenticated release acceptance are being monitored independently.';
+      $('activityText').textContent = 'Installation progress is being monitored securely.';
       startElapsedClock(event.elapsedSeconds);
       showEmbeddedHeader(true);
       break;
@@ -204,8 +204,8 @@ window.flightcore.onEvent(event => {
       showEmbeddedHeader(false);
       setStep(4);
       $('spinner').classList.add('hidden');
-      $('runStatus').textContent = 'Accepted';
-      $('runTitle').textContent = 'FlightCore installation accepted';
+      $('runStatus').textContent = 'Ready';
+      $('runTitle').textContent = 'FlightCore is ready';
       $('handoff').classList.remove('hidden');
       fitCurrentPanel();
       break;

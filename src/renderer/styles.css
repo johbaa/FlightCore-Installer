@@ -5,8 +5,8 @@ html{height:100%;overflow:hidden;background:#07111f}
 body{margin:0;height:100%;min-height:0;overflow:hidden;display:flow-root;background:radial-gradient(circle at 18% 0%,#12325a 0,transparent 33%),linear-gradient(145deg,#06101d,#091525 55%,#06101b);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif}
 .shell{width:min(720px,calc(100% - 40px));max-height:100%;overflow-y:auto;margin:0 auto;padding:28px 0 16px}
 .brandbar{display:flex;align-items:center;gap:15px;margin-bottom:28px}
-.mark{width:52px;height:52px;border:1px solid #3aa0ff;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,#0f3157,#0a1a2c);box-shadow:inset 0 0 20px rgba(39,140,255,.17),0 10px 25px rgba(0,0,0,.25);overflow:hidden}
-.mark img{width:42px;height:42px;object-fit:contain}
+.mark{width:185px;height:46px;display:flex;align-items:center;overflow:hidden}
+.mark img{width:180px;height:auto;max-height:42px;object-fit:contain;object-position:left center}
 .eyebrow,.section-kicker{margin:0 0 4px;color:#5daeff;font-size:11px;font-weight:800;letter-spacing:.16em}
 .brandbar h1{margin:0;font-size:25px;letter-spacing:-.02em}
 .secure-pill{margin-left:auto;border:1px solid #245b50;color:#76e2bd;background:#0b2729;border-radius:999px;padding:7px 10px;font-size:10px;font-weight:800;letter-spacing:.1em}
@@ -31,7 +31,6 @@ form{display:grid;gap:10px}
 label{font-size:12px;color:#b8c8da;font-weight:700;margin-top:5px}
 input{width:100%;height:45px;border:1px solid #304862;border-radius:10px;background:#071423;color:white;padding:0 13px;font-size:15px;outline:none;transition:border .16s,box-shadow .16s}
 input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(39,140,255,.13)}
-.advanced-row{display:grid;grid-template-columns:115px 1fr;align-items:center;gap:14px;margin:3px 0}
 .notice{display:flex;gap:12px;border:1px solid #28415e;background:#0a1a2d;border-radius:11px;padding:13px;margin:8px 0 4px}
 .notice strong{font-size:12px;white-space:nowrap;color:#dcecff}
 .notice span{color:#91a7bf;font-size:12px;line-height:1.4}
@@ -71,7 +70,7 @@ pre{max-height:180px;overflow:auto;margin:0;border-top:1px solid #1e334a;padding
 .final-actions{justify-content:space-between}
 footer{display:flex;justify-content:space-between;color:#5e738a;font-size:10px;letter-spacing:.03em;margin:15px 5px 0}
 .embedded-brandbar{height:82px;display:flex;align-items:center;gap:13px;padding:12px 22px;border-bottom:1px solid #223b57;background:linear-gradient(135deg,#091a2f,#07111f);overflow:hidden}
-.embedded-brandbar img{width:48px;height:48px;object-fit:contain}
+.embedded-brandbar img{width:175px;height:auto;max-height:40px;object-fit:contain;object-position:left center}
 .embedded-brandbar strong{font-size:17px}
 .embedded-title{display:grid;grid-template-columns:auto auto;align-items:center;gap:2px 12px;min-width:0}
 .embedded-title .eyebrow{grid-column:1/-1}
@@ -90,7 +89,6 @@ footer{margin-top:10px}
 .panel{padding:20px}
 .brandbar{margin:8px 5px 22px}
 .secure-pill,.embedded-brandbar .status-dot{display:none}
-.advanced-row{grid-template-columns:1fr;gap:7px}
 .notice{flex-direction:column}
 .actions{flex-direction:column-reverse}
 .actions button,.actions .primary{width:100%}

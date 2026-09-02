@@ -17,7 +17,7 @@ const path = require('node:path');
       startInstall: async () => ({ ok: true }),
       fitWindow: async () => true,
       showLog: async () => true,
-      getAppInfo: async () => ({ version: '1.0.0-test.13', platform: 'darwin' }),
+      getAppInfo: async () => ({ version: '1.0.0', platform: 'darwin' }),
       projectedElapsedSeconds: (base, sampledAt, now) => Math.max(0, Math.floor(Number(base) || 0)) + Math.max(0, Math.floor((Number(now) - Number(sampledAt)) / 1000)),
       onEvent: () => () => {}
     };
@@ -27,6 +27,6 @@ const path = require('node:path');
   await page.screenshot({ path: path.resolve(__dirname, '../dist/launcher-ui.png'), fullPage: true });
   const title = await page.title();
   const heading = await page.locator('h1').textContent();
-  if (title !== 'FlightCore Installer' || heading !== 'Fresh installation') throw new Error('Launcher UI smoke test failed.');
+  if (title !== 'FlightCore Installer' || heading !== 'Install FlightCore') throw new Error('Launcher UI smoke test failed.');
   await browser.close();
 })();

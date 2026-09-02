@@ -23,8 +23,8 @@ test('v3 includes paste support, logos, adaptive sizing and harmonized embedded 
   assert.match(main, /role: 'paste'/);
   assert.match(main, /insertCSS\(embeddedCss\(\)\)/);
   assert.match(main, /fitWindow/);
-  assert.match(html, /flightcore-logo\.svg/g);
-  assert.equal(fs.existsSync(path.join(root, 'src/renderer/flightcore-logo.svg')), true);
+  assert.match(html, /flightcore-logo\.png/g);
+  assert.equal(fs.existsSync(path.join(root, 'src/renderer/flightcore-logo.png')), true);
 });
 
 test('test.5 preserves window position, removes outer scrolling and owns a live elapsed clock', () => {
@@ -77,7 +77,7 @@ test('test.8 waits once for SSH readiness, owns one clock and limits native buil
   assert.match(main, /password was not accepted[^\n]+return false/);
   assert.match(renderer, /case 'ssh-waiting'/);
   assert.match(renderer, /Waiting for SSH —/);
-  assert.match(html, /app will wait for SSH/);
+  assert.match(html, /installer will wait for SSH/);
   assert.match(renderer, /startElapsedClock/);
   assert.equal((html.match(/id="embeddedElapsed"/g) || []).length, 1);
   assert.doesNotMatch(main, /FlightCore Installer — Elapsed/);
@@ -97,12 +97,12 @@ test('test.13 retains the complete build manifest and cannot relaunch after rebo
   assert.match(scope, /must not relaunch/i);
   assert.match(scope, /frozen/i);
   const manifest = require('../package.json');
-  assert.equal(manifest.version, '1.0.0-test.13');
+  assert.equal(manifest.version, '1.0.0');
   assert.equal(manifest.scripts.test, 'node --test test/*.test.js');
   assert.equal(manifest.scripts['dist:mac'], 'electron-builder --mac dmg --universal');
   assert.equal(manifest.scripts['dist:win'], 'electron-builder --win nsis --x64');
   assert.equal(manifest.build.appId, 'se.flightcore.installer');
-  assert.match(read('scripts/capture-ui.js'), /version: '1\.0\.0-test\.13'/);
+  assert.match(read('scripts/capture-ui.js'), /version: '1\.0\.0'/);
 });
 
 

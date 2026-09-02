@@ -1,8 +1,8 @@
 # FlightCore Installer
 
-Native macOS and Windows launcher for the existing FlightCore fresh-install workflow.
+Native macOS and Windows installer for FlightCore on Raspberry Pi.
 
-Current functional-test source: **1.0.0-test.13**.
+Current installer version: **1.0.0**.
 
 ## User flow
 

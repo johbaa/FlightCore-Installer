@@ -1,6 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#123d68"/><stop offset="1" stop-color="#071522"/></linearGradient><filter id="s"><feDropShadow dx="0" dy="28" stdDeviation="26" flood-opacity=".35"/></filter></defs>
-  <rect x="82" y="82" width="860" height="860" rx="210" fill="url(#g)" stroke="#299cff" stroke-width="28" filter="url(#s)"/>
-  <path d="M292 290h420v92H394v86h266v92H394v178H292z" fill="#edf7ff"/>
-  <path d="M712 650v88H532v-88z" fill="#39a9ff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="FlightCore">
+<rect x="0" y="0" width="180" height="180" rx="34" fill="#07182a"/>
+<g transform="translate(9 17)">
+  <path d="M81 1 18 25v42c0 37 25 61 63 79 38-18 63-42 63-79V25L81 1Z" fill="#081a2c" stroke="#d9e9f5" stroke-width="7"/>
+  <path d="M81 21 38 37v31c0 25 16 42 43 56 27-14 43-31 43-56V37L81 21Z" fill="#0a2b48"/>
+  <path d="m81 39 8 18 19 8-19 8-8 19-8-19-19-8 19-8 8-18Z" fill="#10bce8"/>
+  <path d="M17 48H0l23 10h21V47H17Zm0 19H0l27 11h22V67H17Zm127-19h17l-23 10h-21V47h27Zm0 19h17l-27 11h-22V67h32Z" fill="#0fbbe8"/>
+</g>
 </svg>

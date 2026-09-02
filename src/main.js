@@ -110,7 +110,7 @@ function installEditableContextMenu(contents) {
 }
 
 function embeddedCss() {
-  const logoPath = path.join(__dirname, 'renderer', 'flightcore-logo.svg');
+  const logoPath = path.join(__dirname, 'renderer', 'flightcore-logo.png');
   const logo = fs.readFileSync(logoPath).toString('base64');
   return `
     :root{color-scheme:dark!important;--fc-bg:#07111f;--fc-panel:#0b192b;--fc-border:#29425f;--fc-text:#edf5ff;--fc-muted:#9eb0c5;--fc-blue:#278cff}
@@ -118,7 +118,7 @@ function embeddedCss() {
     html,body{background:radial-gradient(circle at 18% 0%,#12325a 0,transparent 33%),linear-gradient(145deg,#06101d,#091525 55%,#06101b)!important;color:var(--fc-text)!important;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif!important;height:100%!important;min-height:0!important}
     body{margin:0!important;padding:24px!important;height:100vh!important;min-height:0!important;overflow:hidden!important}
     body>main,body>.container,body>.wrap,body>.card{width:min(920px,100%)!important;height:100%!important;max-height:100%!important;overflow:hidden!important;margin:0 auto!important;border:1px solid var(--fc-border)!important;border-radius:18px!important;background:linear-gradient(160deg,rgba(15,32,53,.98),rgba(8,22,38,.98))!important;box-shadow:0 24px 70px rgba(0,0,0,.38)!important;padding:28px!important}
-    body>main:before,body>.container:before,body>.wrap:before,body>.card:before{content:"";display:block;width:46px;height:46px;margin:0 0 12px;background:url("data:image/svg+xml;base64,${logo}") center/contain no-repeat}
+    body>main:before,body>.container:before,body>.wrap:before,body>.card:before{content:"";display:block;width:190px;height:42px;margin:0 0 12px;background:url("data:image/png;base64,${logo}") center/contain no-repeat}
     h1,h2,h3,strong,label,summary{color:var(--fc-text)!important}p,span,small{color:var(--fc-muted)}
     button{border:0!important;border-radius:10px!important;background:linear-gradient(135deg,#147be9,#299cff)!important;color:white!important;font-weight:800!important;padding:12px 18px!important}
     input,select,textarea,pre{border:1px solid var(--fc-border)!important;border-radius:10px!important;background:#071423!important;color:white!important}
@@ -199,9 +199,9 @@ function timestamp() {
 }
 
 function beginLog(host, username) {
-  activeLogPath = path.join(app.getPath('downloads'), `FLIGHTCORE_FRESH_INSTALL_${timestamp()}.log`);
+  activeLogPath = path.join(app.getPath('downloads'), `FLIGHTCORE_INSTALL_${timestamp()}.log`);
   fs.writeFileSync(activeLogPath, [
-    'FlightCore Fresh Installer', `Started: ${new Date().toISOString()}`,
+    'FlightCore Installer', `Started: ${new Date().toISOString()}`,
     `Target: ${username}@${host}`, `Launcher: ${app.getVersion()}`, ''
   ].join('\n'), { mode: 0o600 });
   return activeLogPath;
@@ -493,7 +493,7 @@ async function monitorInstallation(host) {
         const result = await inspectIfDue(false);
         if (result?.classification === 'failed') throw new Error('FlightCore reported completion with explicit terminal failure evidence.');
         if (result?.classification !== 'accepted' && Date.now() - completionSeenAt > REBOOT_GRACE_MS) {
-          throw new Error('FlightCore reported completion but did not produce an authenticated accepted release within the verification window.');
+          throw new Error('FlightCore did not become ready within the verification window.');
         }
       }
 

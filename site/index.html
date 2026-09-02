@@ -4,25 +4,25 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#061425">
-  <meta name="description" content="Download the FlightCore Installer for macOS or Windows and install FlightCore on a fresh Raspberry Pi.">
+  <meta name="description" content="Download FlightCore Installer for macOS or Windows and install FlightCore on your Raspberry Pi.">
   <title>Install FlightCore</title>
-  <link rel="icon" href="flightcore-official-logo.png">
+  <link rel="icon" href="flightcore-official-logo.png?v=1.0.0">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
   <header class="shell topbar">
     <a class="brand" href="./" aria-label="FlightCore installer home">
-      <img class="official-logo" src="flightcore-official-logo.png" alt="FlightCore">
+      <img class="official-logo" src="flightcore-official-logo.png?v=1.0.0" alt="FlightCore">
     </a>
     <div class="secure-pill"><span></span>OFFICIAL INSTALLER</div>
   </header>
 
   <main class="shell">
     <section class="hero">
-      <div class="eyebrow">FRESH INSTALLATION</div>
-      <h1>Start with FlightCore.</h1>
-      <p class="lead">Download the installer for your computer. It securely connects to a fresh Raspberry Pi, installs FlightCore, shows live progress, then opens First Setup in your browser.</p>
+      <div class="eyebrow">FLIGHTCORE INSTALLER</div>
+      <h1>Install FlightCore</h1>
+      <p class="lead">Download the installer for macOS or Windows. It guides you through connecting to your Raspberry Pi, installs FlightCore, monitors the installation, and opens the setup wizard when the system is ready.</p>
       <div class="platform-hint" id="platformHint"><span class="hint-dot"></span><span>Detecting your computer…</span></div>
 
       <div class="download-grid" aria-label="FlightCore installer downloads">
@@ -52,27 +52,27 @@
     </section>
 
     <section class="info-panel">
-      <div class="section-head"><div><div class="eyebrow">BEFORE YOU START</div><h2>Prepare the Raspberry Pi</h2></div><div class="time-pill">≈ 10 minutes</div></div>
+      <div class="section-head"><div><div class="eyebrow">BEFORE INSTALLING</div><h2>Prepare the Raspberry Pi</h2></div><div class="time-pill">≈ 10 minutes</div></div>
       <div class="prep-grid">
-        <div class="prep"><span class="check">✓</span><div><strong>Fresh 64-bit Raspberry Pi OS</strong><p>Use a clean supported image. The fresh installer is not an in-place updater.</p></div></div>
+        <div class="prep"><span class="check">✓</span><div><strong>Supported Raspberry Pi OS</strong><p>Use a supported 64-bit Raspberry Pi OS installation.</p></div></div>
         <div class="prep"><span class="check">✓</span><div><strong>Same local network</strong><p>Connect the Raspberry Pi and this computer to the same Ethernet or Wi-Fi network.</p></div></div>
         <div class="prep"><span class="check">✓</span><div><strong>SSH credentials ready</strong><p>Have the Pi IP address, SSH username and password available.</p></div></div>
       </div>
     </section>
 
     <section class="info-panel">
-      <div class="section-head"><div><div class="eyebrow">WHAT HAPPENS NEXT</div><h2>One guided installation</h2></div></div>
+      <div class="section-head"><div><div class="eyebrow">INSTALLATION</div><h2>Guided from start to setup</h2></div></div>
       <div class="flow">
         <div class="flow-step"><b>1</b><div><strong>Download</strong><p>Open the installer for your computer.</p></div></div><div class="flow-arrow">→</div>
         <div class="flow-step"><b>2</b><div><strong>Connect</strong><p>Enter the Raspberry Pi address and SSH credentials.</p></div></div><div class="flow-arrow">→</div>
         <div class="flow-step"><b>3</b><div><strong>Install</strong><p>Follow live progress while FlightCore is installed.</p></div></div><div class="flow-arrow">→</div>
-        <div class="flow-step"><b>4</b><div><strong>First Setup</strong><p>After reboot, FlightCore opens automatically in your browser.</p></div></div>
+        <div class="flow-step"><b>4</b><div><strong>Set up</strong><p>Complete FlightCore configuration in your browser.</p></div></div>
       </div>
-      <div class="handoff"><div class="handoff-icon">↗</div><div><strong>The installer hands off to FlightCore.</strong><p>When installation reaches 100%, the Pi reboots. The installer waits for it to return, opens the First Setup Wizard in your normal browser, and closes.</p></div></div>
+      <div class="handoff"><div class="handoff-icon">↗</div><div><strong>FlightCore opens automatically when installation is complete.</strong><p>The Raspberry Pi restarts as part of the installation. The installer waits for FlightCore to become available, opens the setup wizard in your default browser, and then closes.</p></div></div>
     </section>
 
-    <section class="existing"><strong>Already running FlightCore?</strong><span>Do not use the fresh installer. Update from <b>System → Software Update</b> inside FlightCore.</span></section>
-    <section class="preview-note" id="previewNote"><strong>Preview installer</strong><span>The current Mac and Windows builds are unsigned preview builds. Your operating system may show a security confirmation the first time you open them.</span></section>
+    <section class="existing"><strong>FlightCore already installed?</strong><span>Use <b>System → Software Update</b> inside FlightCore instead of this installer.</span></section>
+    <section class="preview-note" id="previewNote"><strong>First-launch security notice</strong><span>The current installers are not yet code-signed. macOS or Windows may ask you to confirm the application before the first launch.</span></section>
   </main>
 
   <footer class="shell"><span>FlightCore Control Platform</span><span id="footerVersion">Current installer</span></footer>

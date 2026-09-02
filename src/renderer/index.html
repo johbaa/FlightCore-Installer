@@ -9,16 +9,16 @@
 </head>
 <body>
   <header class="embedded-brandbar hidden" id="embeddedBrandbar">
-    <img src="flightcore-logo.svg" alt="FlightCore">
+    <img src="flightcore-logo.png" alt="FlightCore">
     <div class="embedded-title"><p class="eyebrow">FLIGHTCORE CONTROL PLATFORM</p><strong>Installation progress</strong><span class="elapsed-pill" id="embeddedElapsed">Elapsed 00:00</span></div>
     <span class="status-dot working"><i></i> Securely monitored</span>
   </header>
   <main class="shell">
     <header class="brandbar">
-      <div class="mark"><img src="flightcore-logo.svg" alt="FlightCore"></div>
+      <div class="mark"><img src="flightcore-logo.png" alt="FlightCore"></div>
       <div>
         <p class="eyebrow">FLIGHTCORE CONTROL PLATFORM</p>
-        <h1>Fresh installation</h1>
+        <h1>Install FlightCore</h1>
       </div>
       <span class="secure-pill">SECURE SSH</span>
     </header>
@@ -39,17 +39,15 @@
         </div>
         <span class="status-dot" id="connectStatus"><i></i><span id="connectStatusText">Ready</span></span>
       </div>
-      <p class="lead">Enter the address and password for the freshly prepared Raspberry Pi. The password is used only for this connection and is never saved. You can continue while the Pi is still booting; the app will wait for SSH.</p>
+      <p class="lead">Enter the Raspberry Pi address and password. The password is used only for this connection and is never saved. You can continue while the Pi is still starting; the installer will wait for SSH.</p>
       <form id="connectForm">
         <label for="host">Raspberry Pi IP address or host name</label>
         <input id="host" name="host" autocomplete="off" spellcheck="false" placeholder="192.168.1.120" required>
-        <div class="advanced-row">
-          <label for="username">SSH user</label>
-          <input id="username" name="username" autocomplete="username" value="pi" required>
-        </div>
+        <label for="username">SSH user</label>
+        <input id="username" name="username" autocomplete="username" value="pi" required>
         <label for="password">Raspberry Pi password</label>
         <input id="password" name="password" type="password" autocomplete="current-password" required>
-        <div class="notice"><strong>Before continuing</strong><span>The Pi must be powered on, connected to the same network, and running a supported fresh Raspberry Pi OS image.</span></div>
+        <div class="notice"><strong>Before continuing</strong><span>The Raspberry Pi must be powered on, connected to the same network, and running a supported 64-bit Raspberry Pi OS installation.</span></div>
         <p class="error" id="formError" role="alert"></p>
         <button class="primary" id="connectButton" type="submit"><span>Connect and verify</span><b>→</b></button>
       </form>
@@ -77,7 +75,7 @@
       </div>
       <div class="handoff hidden" id="handoff">
         <div class="handoff-icon">✓</div>
-        <div><strong>FlightCore accepted</strong><span>The installed release and First Setup were verified securely. First Setup is opening in your browser.</span></div>
+        <div><strong>FlightCore ready</strong><span>FlightCore is installed and ready for setup. The setup wizard is opening in your browser.</span></div>
       </div>
       <details>
         <summary>Technical details</summary>
@@ -89,7 +87,7 @@
       </div>
     </section>
 
-    <footer><span>FlightCore Installer <b id="version"></b></span><span>Fresh install • Port 8090 handoff</span></footer>
+    <footer><span>FlightCore Installer <b id="version"></b></span><span>FlightCore installation • Guided browser setup</span></footer>
   </main>
   <script src="renderer.js"></script>
 </body>

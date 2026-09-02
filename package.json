@@ -1,8 +1,8 @@
 {
   "name": "flightcore-installer",
-  "version": "1.0.0-test.13",
+  "version": "1.0.0",
   "private": true,
-  "description": "Native macOS and Windows launcher for FlightCore fresh installation",
+  "description": "Native macOS and Windows installer for FlightCore",
   "main": "src/main.js",
   "author": "FlightCore",
   "license": "UNLICENSED",
@@ -49,7 +49,7 @@
       "x64ArchFiles": "Contents/Resources/app.asar.unpacked/node_modules/ssh2/lib/protocol/crypto/build/Release/sshcrypto.node",
       "entitlements": "build-resources/entitlements.mac.plist",
       "entitlementsInherit": "build-resources/entitlements.mac.plist",
-      "icon": "build-resources/icon.icns",
+      "icon": "build-resources/icon.svg",
       "target": [
         {
           "target": "dmg",
@@ -72,7 +72,7 @@
           ]
         }
       ],
-      "icon": "build-resources/icon.ico"
+      "icon": "build-resources/icon.svg"
     },
     "nsis": {
       "oneClick": true,
