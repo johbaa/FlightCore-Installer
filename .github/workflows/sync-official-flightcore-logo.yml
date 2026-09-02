@@ -12,8 +12,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: flightcore-branding-pages
+  cancel-in-progress: true
 
 jobs:
   deploy-branding:
@@ -31,24 +31,20 @@ jobs:
           mkdir -p _site/downloads
           cp -R site/. _site/
 
-          # Replace the incorrect installer-F header asset with the exact
-          # FlightCore shield-and-wings wordmark supplied for the product UI.
           base64 -d site/flightcore-shield-wordmark.b64 > _site/flightcore-official-logo.png
           test "$(sha256sum _site/flightcore-official-logo.png | awk '{print $1}')" = \
             '3e8b1f095e86ad0be1abfc44eb0c5045d3dd9f9aa7827efdbf5e67c19665c6e1'
 
-          # Force browsers/CDNs to fetch the corrected brand asset.
           python3 - <<'PY'
           from pathlib import Path
+          import re
           p=Path('_site/index.html')
           s=p.read_text(encoding='utf-8')
-          import re
           s=re.sub(r'flightcore-official-logo\.png(?:\?v=[^"\']+)?',
                    'flightcore-official-logo.png?v=shield2',s)
           p.write_text(s,encoding='utf-8')
           PY
 
-          # Preserve the exact already-published installers and manifest.
           curl -fL --retry 4 \
             https://johbaa.github.io/FlightCore-Installer/downloads/FlightCore-Installer-mac-universal.dmg \
             -o _site/downloads/FlightCore-Installer-mac-universal.dmg
