@@ -1,0 +1,98 @@
+name: Sync official FlightCore product logo
+
+on:
+  push:
+    paths:
+      - '.github/workflows/sync-official-flightcore-logo.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  sync-logo:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download the exact FlightCore product payload
+        run: |
+          set -Eeuo pipefail
+          curl -fL --retry 4 --retry-delay 2 \
+            https://raw.githubusercontent.com/johbaa/SIYI_PI_Installer/main/FLIGHTCORE_RPI_INSTALLER_RELEASE_4.4.0-rc.11.tar.gz \
+            -o /tmp/flightcore.tar.gz
+          mkdir -p /tmp/flightcore-payload
+          tar -xzf /tmp/flightcore.tar.gz -C /tmp/flightcore-payload
+
+      - name: Locate official FlightCore logo candidates
+        id: logo
+        run: |
+          set -Eeuo pipefail
+          mapfile -t NAMED < <(find /tmp/flightcore-payload -type f \
+            \( -iname '*flightcore*logo*.svg' -o -iname '*flightcore*logo*.png' -o -iname '*flightcore*logo*.webp' -o -iname '*logo*flightcore*.svg' -o -iname '*logo*flightcore*.png' -o -iname '*logo*flightcore*.webp' \) | sort)
+
+          if [ "${#NAMED[@]}" -eq 0 ]; then
+            mapfile -t NAMED < <(grep -ril --include='*.svg' 'FlightCore' /tmp/flightcore-payload 2>/dev/null | sort || true)
+          fi
+
+          echo 'Official-logo candidates from FlightCore payload:'
+          printf '  %s\n' "${NAMED[@]:-<none>}"
+          echo "candidate_count=${#NAMED[@]}"
+
+          if [ "${#NAMED[@]}" -ne 1 ]; then
+            echo 'Expected exactly one unambiguous official FlightCore logo asset.' >&2
+            exit 2
+          fi
+
+          SRC="${NAMED[0]}"
+          EXT="${SRC##*.}"
+          EXT="$(printf '%s' "$EXT" | tr '[:upper:]' '[:lower:]')"
+          case "$EXT" in svg|png|webp) ;; *) echo "Unsupported logo format: $EXT" >&2; exit 3;; esac
+          echo "src=$SRC" >> "$GITHUB_OUTPUT"
+          echo "ext=$EXT" >> "$GITHUB_OUTPUT"
+
+      - name: Replace temporary installer icon with official product logo
+        run: |
+          set -Eeuo pipefail
+          SRC='${{ steps.logo.outputs.src }}'
+          EXT='${{ steps.logo.outputs.ext }}'
+          DEST="site/flightcore-official-logo.$EXT"
+          cp "$SRC" "$DEST"
+
+          python3 - "$DEST" <<'PY'
+          from pathlib import Path
+          import re, sys
+          dest = Path(sys.argv[1]).name
+          p = Path('site/index.html')
+          s = p.read_text(encoding='utf-8')
+          s = re.sub(r'<link rel="icon" href="[^"]+" type="[^"]+">',
+                     f'<link rel="icon" href="{dest}">', s)
+          old = '''<a class="brand" href="./" aria-label="FlightCore installer home">\n      <img src="flightcore-logo.svg" alt="">\n      <div><div class="brand-name">Flight<span>Core</span></div><div class="brand-sub">CONTROL PLATFORM</div></div>\n    </a>'''
+          new = f'''<a class="brand" href="./" aria-label="FlightCore installer home">\n      <img class="official-logo" src="{dest}" alt="FlightCore">\n    </a>'''
+          if old not in s:
+              raise SystemExit('Expected temporary-brand header block was not found')
+          s = s.replace(old, new)
+          p.write_text(s, encoding='utf-8')
+          PY
+
+          cat >> site/styles.css <<'CSS'
+
+          /* Official product wordmark — sourced from the FlightCore payload. */
+          .brand .official-logo{width:auto;height:42px;max-width:245px;object-fit:contain;object-position:left center}
+          CSS
+
+          git rm -f site/flightcore-logo.svg || true
+
+      - name: Commit official branding asset
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'FlightCore Build'
+          git config user.email 'actions@users.noreply.github.com'
+          git add site/index.html site/styles.css site/flightcore-official-logo.*
+          if git diff --cached --quiet; then
+            echo 'No branding change needed.'
+            exit 0
+          fi
+          git commit -m 'Use official FlightCore product logo on installer site'
+          git push origin HEAD:main
