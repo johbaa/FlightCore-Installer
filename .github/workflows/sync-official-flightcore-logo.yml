@@ -16,7 +16,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download the exact FlightCore product payload
+      - name: Download exact FlightCore RC11 product payload
         run: |
           set -Eeuo pipefail
           curl -fL --retry 4 --retry-delay 2 \
@@ -25,74 +25,54 @@ jobs:
           mkdir -p /tmp/flightcore-payload
           tar -xzf /tmp/flightcore.tar.gz -C /tmp/flightcore-payload
 
-      - name: Locate official FlightCore logo candidates
+      - name: Select exact shield-and-wings FlightCore wordmark
         id: logo
         run: |
           set -Eeuo pipefail
-          mapfile -t NAMED < <(find /tmp/flightcore-payload -type f \
-            \( -iname '*flightcore*logo*.svg' -o -iname '*flightcore*logo*.png' -o -iname '*flightcore*logo*.webp' -o -iname '*logo*flightcore*.svg' -o -iname '*logo*flightcore*.png' -o -iname '*logo*flightcore*.webp' \) | sort)
+          TARGET_SHA='c5d97835b9a9aa36a7592a652b08f645ac4f218153966f51ac2743ee58a243c7'
+          SRC=''
+          while IFS= read -r -d '' f; do
+            h="$(sha256sum "$f" | awk '{print $1}')"
+            if [ "$h" = "$TARGET_SHA" ]; then
+              SRC="$f"
+              break
+            fi
+          done < <(find /tmp/flightcore-payload -type f -print0)
 
-          if [ "${#NAMED[@]}" -eq 0 ]; then
-            mapfile -t NAMED < <(grep -ril --include='*.svg' 'FlightCore' /tmp/flightcore-payload 2>/dev/null | sort || true)
-          fi
-
-          echo 'Official-logo candidates from FlightCore payload:'
-          printf '  %s\n' "${NAMED[@]:-<none>}"
-          echo "candidate_count=${#NAMED[@]}"
-
-          if [ "${#NAMED[@]}" -ne 1 ]; then
-            echo 'Expected exactly one unambiguous official FlightCore logo asset.' >&2
+          if [ -z "$SRC" ]; then
+            echo "Exact shield-and-wings FlightCore logo SHA-256 was not found in RC11 payload." >&2
+            echo "PNG candidates:" >&2
+            find /tmp/flightcore-payload -type f -iname '*.png' -exec file {} \; >&2 || true
             exit 2
           fi
 
-          SRC="${NAMED[0]}"
-          EXT="${SRC##*.}"
-          EXT="$(printf '%s' "$EXT" | tr '[:upper:]' '[:lower:]')"
-          case "$EXT" in svg|png|webp) ;; *) echo "Unsupported logo format: $EXT" >&2; exit 3;; esac
+          echo "Selected exact FlightCore product logo: $SRC"
+          echo "SHA-256: $(sha256sum "$SRC" | awk '{print $1}')"
           echo "src=$SRC" >> "$GITHUB_OUTPUT"
-          echo "ext=$EXT" >> "$GITHUB_OUTPUT"
 
-      - name: Replace temporary installer icon with official product logo
+      - name: Replace wrong F header asset with official FlightCore product logo
         run: |
           set -Eeuo pipefail
-          SRC='${{ steps.logo.outputs.src }}'
-          EXT='${{ steps.logo.outputs.ext }}'
-          DEST="site/flightcore-official-logo.$EXT"
-          cp "$SRC" "$DEST"
-
-          python3 - "$DEST" <<'PY'
+          cp '${{ steps.logo.outputs.src }}' site/flightcore-official-logo.png
+          python3 - <<'PY'
           from pathlib import Path
-          import re, sys
-          dest = Path(sys.argv[1]).name
           p = Path('site/index.html')
           s = p.read_text(encoding='utf-8')
-          s = re.sub(r'<link rel="icon" href="[^"]+" type="[^"]+">',
-                     f'<link rel="icon" href="{dest}">', s)
-          old = '''<a class="brand" href="./" aria-label="FlightCore installer home">\n      <img src="flightcore-logo.svg" alt="">\n      <div><div class="brand-name">Flight<span>Core</span></div><div class="brand-sub">CONTROL PLATFORM</div></div>\n    </a>'''
-          new = f'''<a class="brand" href="./" aria-label="FlightCore installer home">\n      <img class="official-logo" src="{dest}" alt="FlightCore">\n    </a>'''
-          if old not in s:
-              raise SystemExit('Expected temporary-brand header block was not found')
-          s = s.replace(old, new)
+          s = s.replace('href="flightcore-official-logo.png"', 'href="flightcore-official-logo.png?v=shield1"')
+          s = s.replace('src="flightcore-official-logo.png"', 'src="flightcore-official-logo.png?v=shield1"')
           p.write_text(s, encoding='utf-8')
           PY
 
-          cat >> site/styles.css <<'CSS'
-
-          /* Official product wordmark — sourced from the FlightCore payload. */
-          .brand .official-logo{width:auto;height:42px;max-width:245px;object-fit:contain;object-position:left center}
-          CSS
-
-          git rm -f site/flightcore-logo.svg || true
-
-      - name: Commit official branding asset
+      - name: Commit corrected official branding
         run: |
           set -Eeuo pipefail
+          test "$(sha256sum site/flightcore-official-logo.png | awk '{print $1}')" = 'c5d97835b9a9aa36a7592a652b08f645ac4f218153966f51ac2743ee58a243c7'
           git config user.name 'FlightCore Build'
           git config user.email 'actions@users.noreply.github.com'
-          git add site/index.html site/styles.css site/flightcore-official-logo.*
+          git add site/index.html site/flightcore-official-logo.png
           if git diff --cached --quiet; then
-            echo 'No branding change needed.'
+            echo 'Official shield-and-wings logo already installed.'
             exit 0
           fi
-          git commit -m 'Use official FlightCore product logo on installer site'
+          git commit -m 'Use shield-and-wings FlightCore product logo on installer site'
           git push origin HEAD:main
