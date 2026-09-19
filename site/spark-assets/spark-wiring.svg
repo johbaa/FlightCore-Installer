@@ -1,18 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 420" role="img" aria-labelledby="title desc">
-  <title id="title">Complete DJI Spark recovery wiring</title>
-  <desc id="desc">Mac connects by USB to Arduino Nano Matter. Nano A5 connects to Spark contact 1, Nano ground to contact 2, nine volt positive to contact 4, nine volt negative to contact 5, and Nano A4 to contact 6.</desc>
-  <rect width="840" height="420" rx="26" fill="#071321"/>
-  <g font-family="Arial,sans-serif">
-    <rect x="34" y="53" width="180" height="112" rx="13" fill="#13283b" stroke="#5f8098" stroke-width="3"/><rect x="53" y="70" width="142" height="74" rx="5" fill="#09131d"/><path d="M65 178h118l23 18H42Z" fill="#52697a"/><text x="124" y="119" fill="#d9ecf9" font-size="19" text-anchor="middle" font-weight="700">Mac</text>
-    <rect x="297" y="44" width="194" height="250" rx="18" fill="#17435c" stroke="#7ec5e8" stroke-width="4"/><rect x="328" y="62" width="132" height="45" rx="8" fill="#dbe7eb"/><text x="394" y="90" fill="#173447" font-size="15" text-anchor="middle" font-weight="800">NANO MATTER</text><circle cx="394" cy="273" r="9" fill="#3a9fc7"/>
-    <g font-size="15" font-weight="800"><text x="315" y="145" fill="#34aaff">A5 / SCL</text><text x="315" y="189" fill="#36d99b">A4 / SDA</text><text x="315" y="233" fill="#b7c3cc">GND</text></g>
-    <rect x="61" y="262" width="122" height="110" rx="13" fill="#263542" stroke="#8395a4" stroke-width="3"/><circle cx="96" cy="280" r="12" fill="#ff594f"/><circle cx="149" cy="280" r="9" fill="#222" stroke="#c1ccd4" stroke-width="2"/><text x="122" y="331" fill="#f4f8fb" font-size="25" text-anchor="middle" font-weight="800">9 V</text><text x="96" y="303" fill="#ff8b83" font-size="13" text-anchor="middle">+</text><text x="149" y="303" fill="#c8d2d9" font-size="13" text-anchor="middle">−</text>
-    <path d="M214 110H297" fill="none" stroke="#b9d6e7" stroke-width="8"/><text x="255" y="97" fill="#9bb9cc" font-size="12" text-anchor="middle">USB-C</text>
-    <rect x="606" y="66" width="190" height="278" rx="22" fill="#25394b" stroke="#718da2" stroke-width="4"/><text x="701" y="100" fill="#d9ecf9" font-size="17" text-anchor="middle" font-weight="800">SPARK BATTERY</text><text x="701" y="124" fill="#8eb0c8" font-size="11" text-anchor="middle">contacts facing you</text>
-    <g font-weight="900" text-anchor="middle"><g fill="#34aaff"><rect x="618" y="155" width="24" height="70" rx="4"/><text x="630" y="246" font-size="16">1</text></g><g fill="#8796a5"><rect x="647" y="155" width="24" height="70" rx="4"/><text x="659" y="246" font-size="16">2</text></g><g fill="#c38f31"><rect x="676" y="155" width="24" height="70" rx="4"/><text x="688" y="246" font-size="16">3</text></g><g fill="#ff594f"><rect x="705" y="155" width="24" height="70" rx="4"/><text x="717" y="246" font-size="16">4</text></g><g fill="#8796a5"><rect x="734" y="155" width="24" height="70" rx="4"/><text x="746" y="246" font-size="16">5</text></g><g fill="#36d99b"><rect x="763" y="155" width="24" height="70" rx="4"/><text x="775" y="246" font-size="16">6</text></g></g>
-    <text x="701" y="303" fill="#a8bfd1" font-size="13" text-anchor="middle">LEDs/button upward</text>
-    <path d="M480 141 C545 141 558 168 618 180" fill="none" stroke="#34aaff" stroke-width="5"/><path d="M480 184 C550 184 565 214 763 208" fill="none" stroke="#36d99b" stroke-width="5"/><path d="M480 228 C546 228 579 195 647 196" fill="none" stroke="#aab7c2" stroke-width="5"/>
-    <path d="M96 268 C102 235 238 342 717 214" fill="none" stroke="#ff594f" stroke-width="5"/><path d="M149 271 C183 340 546 352 746 218" fill="none" stroke="#8c9aa5" stroke-width="5"/>
-    <g font-size="12" font-weight="800"><text x="548" y="133" fill="#74c4ff">A5 → 1</text><text x="526" y="197" fill="#70e0b4">A4 → 6</text><text x="524" y="245" fill="#c5d1da">GND → 2</text><text x="470" y="323" fill="#ff9189">9 V + → 4</text><text x="645" y="371" fill="#c5d1da">9 V − → 5</text></g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 650" role="img" aria-labelledby="title desc">
+  <title id="title">Five direct DJI Spark recovery connections</title>
+  <desc id="desc">With contacts numbered left to right, connect Nano A5 to contact one, Nano ground to contact two, nothing to contact three, nine volt positive to contact four, nine volt negative to contact five and Nano A4 to contact six.</desc>
+  <rect width="1100" height="650" rx="30" fill="#061321"/>
+  <text x="550" y="45" fill="#ffffff" font-family="Arial,sans-serif" font-size="27" text-anchor="middle" font-weight="900">CONNECT THESE FIVE WIRES</text>
+  <text x="550" y="77" fill="#9dc8e5" font-family="Arial,sans-serif" font-size="16" text-anchor="middle">Battery label facing you · contacts counted LEFT → RIGHT</text>
+  <path d="M122 122 Q550 80 978 122 L1015 160 V292 H85V160Z" fill="#293f52" stroke="#86a9c0" stroke-width="5"/>
+  <text x="550" y="151" fill="#dfeff8" font-family="Arial,sans-serif" font-size="19" text-anchor="middle" font-weight="800">DJI SPARK BATTERY CONNECTOR</text>
+  <rect x="115" y="174" width="870" height="98" rx="12" fill="#02070b" stroke="#66869d" stroke-width="4"/>
+  <g font-family="Arial,sans-serif" text-anchor="middle" font-weight="900">
+    <g><rect x="137" y="190" width="98" height="66" rx="7" fill="#249ef5"/><text x="186" y="233" fill="#fff" font-size="31">1</text></g>
+    <g><rect x="282" y="190" width="98" height="66" rx="7" fill="#8d9ca8"/><text x="331" y="233" fill="#fff" font-size="31">2</text></g>
+    <g><rect x="427" y="190" width="98" height="66" rx="7" fill="#483d29"/><text x="476" y="233" fill="#d7c9a6" font-size="31">3</text></g>
+    <g><rect x="572" y="190" width="98" height="66" rx="7" fill="#f25149"/><text x="621" y="233" fill="#fff" font-size="31">4</text></g>
+    <g><rect x="717" y="190" width="98" height="66" rx="7" fill="#8d9ca8"/><text x="766" y="233" fill="#fff" font-size="31">5</text></g>
+    <g><rect x="862" y="190" width="98" height="66" rx="7" fill="#25c88d"/><text x="911" y="233" fill="#fff" font-size="31">6</text></g>
   </g>
+  <g fill="none" stroke-width="9" stroke-linecap="round"><path d="M186 256v98" stroke="#249ef5"/><path d="M331 256v98" stroke="#a6b3bc"/><path d="M621 256v98" stroke="#f25149"/><path d="M766 256v98" stroke="#8d9ca8"/><path d="M911 256v98" stroke="#25c88d"/></g>
+  <path d="M447 313l58 58M505 313l-58 58" stroke="#f3bf4b" stroke-width="10" stroke-linecap="round"/>
+  <g font-family="Arial,sans-serif" text-anchor="middle">
+    <g><rect x="112" y="355" width="148" height="94" rx="13" fill="#0b3551" stroke="#249ef5" stroke-width="3"/><text x="186" y="391" fill="#8bd3ff" font-size="15" font-weight="800">ARDUINO NANO</text><text x="186" y="424" fill="#fff" font-size="22" font-weight="900">A5 / SCL</text></g>
+    <g><rect x="257" y="355" width="148" height="94" rx="13" fill="#263542" stroke="#a6b3bc" stroke-width="3"/><text x="331" y="391" fill="#d2dce3" font-size="15" font-weight="800">ARDUINO NANO</text><text x="331" y="424" fill="#fff" font-size="22" font-weight="900">GND</text></g>
+    <g><rect x="402" y="355" width="148" height="94" rx="13" fill="#352e20" stroke="#b59345" stroke-width="3"/><text x="476" y="392" fill="#f3cf7a" font-size="18" font-weight="900">NO WIRE</text><text x="476" y="421" fill="#cdbb91" font-size="14">leave empty</text></g>
+    <g><rect x="547" y="355" width="148" height="94" rx="13" fill="#4a2425" stroke="#f25149" stroke-width="3"/><text x="621" y="391" fill="#ff9189" font-size="15" font-weight="800">9 V BATTERY</text><text x="621" y="424" fill="#fff" font-size="22" font-weight="900">RED  +</text></g>
+    <g><rect x="692" y="355" width="148" height="94" rx="13" fill="#26313a" stroke="#a6b3bc" stroke-width="3"/><text x="766" y="391" fill="#d2dce3" font-size="15" font-weight="800">9 V BATTERY</text><text x="766" y="424" fill="#fff" font-size="22" font-weight="900">BLACK  −</text></g>
+    <g><rect x="837" y="355" width="148" height="94" rx="13" fill="#123c31" stroke="#25c88d" stroke-width="3"/><text x="911" y="391" fill="#75e7bd" font-size="15" font-weight="800">ARDUINO NANO</text><text x="911" y="424" fill="#fff" font-size="22" font-weight="900">A4 / SDA</text></g>
+  </g>
+  <rect x="112" y="490" width="423" height="89" rx="15" fill="#0a2035" stroke="#2f6d96" stroke-width="3"/>
+  <path d="M153 529h78" stroke="#d9ecf8" stroke-width="9"/><rect x="230" y="517" width="31" height="24" rx="5" fill="#d9ecf8"/><text x="294" y="526" fill="#76c9ff" font-family="Arial,sans-serif" font-size="15" font-weight="800">USB-C</text><text x="294" y="550" fill="#fff" font-family="Arial,sans-serif" font-size="19" font-weight="900">NANO → MAC</text>
+  <rect x="565" y="490" width="423" height="89" rx="15" fill="#3b2620" stroke="#c06d4c" stroke-width="3"/>
+  <path d="M611 514l39 39M650 514l-39 39" stroke="#ff8c69" stroke-width="8" stroke-linecap="round"/><text x="798" y="526" fill="#ff9d7e" font-family="Arial,sans-serif" font-size="15" text-anchor="middle" font-weight="800">DURING RECOVERY</text><text x="798" y="550" fill="#fff" font-family="Arial,sans-serif" font-size="19" text-anchor="middle" font-weight="900">DJI CHARGER DISCONNECTED</text>
+  <text x="550" y="621" fill="#a9c3d6" font-family="Arial,sans-serif" font-size="16" text-anchor="middle">Check every contact twice before attaching the 9 V snap connector.</text>
 </svg>

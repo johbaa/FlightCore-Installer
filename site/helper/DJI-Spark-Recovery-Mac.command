@@ -14,12 +14,9 @@ fi
 
 chmod +x "$ENGINE"
 TOKEN="$(python3 -c 'import secrets; print(secrets.token_urlsafe(24))')"
-PAGE="https://johbaa.github.io/FlightCore-Installer/spark-recovery.html#helper=$TOKEN"
-
 echo "DJI Spark Recovery local helper"
 echo "Keep this window open while using the recovery page."
-echo "Opening the protected local control page..."
-open "$PAGE"
+echo "Return to the recovery page; it will connect automatically."
 
 exec python3 - "$ENGINE" "$TOKEN" "$PORT" <<'PY'
 import json
@@ -72,6 +69,9 @@ class Handler(BaseHTTPRequestHandler):
         supplied = parse_qs(urlparse(self.path).query).get("token", [""])[0]
         return supplied == token
 
+    def trusted_page(self):
+        return self.headers.get("Origin", "") == "https://johbaa.github.io"
+
     def json(self, code, payload):
         body = json.dumps(payload).encode()
         self.send_response(code)
@@ -82,7 +82,12 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
-        if urlparse(self.path).path != "/status" or not self.authorized():
+        route = urlparse(self.path).path
+        if route == "/bootstrap":
+            if not self.trusted_page():
+                return self.json(403, {"error": "Not authorized"})
+            return self.json(200, {"ready": True, "token": token})
+        if route != "/status" or not self.authorized():
             return self.json(403, {"error": "Not authorized"})
         with lock:
             snapshot = dict(state)

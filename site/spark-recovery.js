@@ -12,7 +12,7 @@ const endpoint = 'http://127.0.0.1:8765';
 
 const fragmentToken = new URLSearchParams(location.hash.slice(1)).get('helper');
 if (fragmentToken) sessionStorage.setItem('sparkRecoveryHelperToken', fragmentToken);
-const token = fragmentToken || sessionStorage.getItem('sparkRecoveryHelperToken') || '';
+let token = fragmentToken || sessionStorage.getItem('sparkRecoveryHelperToken') || '';
 if (fragmentToken) history.replaceState({}, '', location.pathname);
 
 let connected = false;
@@ -71,13 +71,22 @@ function render(state) {
 }
 
 async function poll() {
-  if (!token || polling) return;
+  if (polling) return;
   polling = true;
   try {
+    if (!token) {
+      const bootstrap = await fetch(`${endpoint}/bootstrap`, { cache: 'no-store' });
+      if (!bootstrap.ok) throw new Error('helper bootstrap rejected request');
+      const session = await bootstrap.json();
+      token = session.token;
+      sessionStorage.setItem('sparkRecoveryHelperToken', token);
+    }
     const response = await api('/status');
     if (!response.ok) throw new Error('helper rejected request');
     render(await response.json());
   } catch {
+    token = '';
+    sessionStorage.removeItem('sparkRecoveryHelperToken');
     setConnected(false);
   } finally {
     polling = false;

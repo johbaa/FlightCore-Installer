@@ -9,7 +9,7 @@ LOG="$OUTDIR/DJI_Spark_SMBus_Recovery_${STAMP}.txt"
 exec > >(tee "$LOG") 2>&1
 
 echo "============================================================"
-echo "DJI Spark + Arduino Nano Matter SMBus Recovery V6"
+echo "DJI Spark + Arduino Nano Matter SMBus Recovery V7"
 echo "Started: $(date)"
 echo "The diagnostic phase is read-only. PF reset is separately confirmed."
 echo "============================================================"
@@ -120,7 +120,7 @@ void setup() {
   Wire.begin();                  // Nano Matter SDA=A4, SCL=A5
   Wire.setClock(100000);
   delay(500);
-  Serial.println("READY SparkSMBusBridgeV6");
+  Serial.println("READY SparkSMBusBridgeV7");
 }
 
 void loop() {
@@ -275,8 +275,9 @@ try:
     cell_spread = max(cells) - min(cells)
     reasons = []
     if "DJI" not in (manufacturer + " " + device).upper(): reasons.append("gauge does not identify as DJI")
-    if not 6500 <= pack_mv <= 13200: reasons.append("pack voltage is outside the guarded range")
-    if min(cells) < 2500: reasons.append("at least one cell is below 2.500 V")
+    if pack_mv < 5400: reasons.append("pack voltage is below the absolute 5.400 V recovery floor")
+    if pack_mv > 13200: reasons.append("pack voltage is implausibly high")
+    if min(cells) < 1800: reasons.append("at least one cell is below the absolute 1.800 V recovery floor")
     if max(cells) > 4400: reasons.append("at least one reported cell voltage is implausibly high")
     if cell_spread > 300: reasons.append("cell spread exceeds the absolute 300 mV override limit")
     if abs(sum(cells) - pack_mv) > 700: reasons.append("cell sum does not agree with pack voltage")
@@ -285,6 +286,11 @@ try:
         for reason in reasons: print("  - " + reason)
         print("Do not charge or fly this pack. Diagnose the cells/BMS first.")
         raise SystemExit(20)
+
+    if min(cells) < 2500:
+        print("\nWARNING: at least one cell is below 2.500 V and severely over-discharged.")
+        print("Recovery is permitted down to 1.800 V/cell, but this does not establish that the cell is safe or serviceable.")
+        print("The BMS must report live CUV clear before PF reset can be sent.")
 
     if cell_spread > 200:
         print("\nWARNING: cell spread exceeds the normal 200 mV safety limit.")
@@ -302,6 +308,8 @@ try:
     print("This does NOT prove that this old battery is safe or healthy.")
     if safety_before & 1:
         print("\nBLOCKED: live Cell Undervoltage (CUV) is still active.")
+        print("Keep the 9 V wake supply connected and allow the cell readings to rise, then run recovery again.")
+        print("PF reset cannot remain cleared while the BMS still reports an active undervoltage fault.")
         print("PF clearing was not offered and no settings were changed.")
         raise SystemExit(22)
     if pf_before == 0:

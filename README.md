@@ -21,7 +21,7 @@ The embedded installation page runs in a separate sandboxed Electron view withou
 
 ## DJI Spark battery recovery page
 
-The same GitHub Pages site also publishes `spark-recovery.html`. It provides the verified Nano Matter/9 V wiring diagrams and a browser control for the guarded V6 SMBus recovery engine. The browser talks only to a token-protected helper bound to `127.0.0.1`; the hosted page cannot run shell commands or access USB without that local helper. The helper package is assembled by the Pages workflow from `site/helper`.
+The same GitHub Pages site also publishes `spark-recovery.html`. It provides the verified Nano Matter/9 V wiring diagrams and a browser control for the guarded V7 SMBus recovery engine. The recovery page is deliberately product-neutral and contains no FlightCore branding. The browser talks only to a token-protected helper bound to `127.0.0.1`; the hosted page cannot run shell commands or access USB without that local helper. The helper package is assembled by the Pages workflow from `site/helper`.
 
 Version 1.0.0-test.8 retains the test.3 UI scope: native paste shortcuts and an editable-field context menu, the FlightCore logo throughout, harmonized embedded progress styling, and adaptive window sizing. It also keeps the user-selected window position, displays one live elapsed clock in the embedded header, removes outer document scrolling from the embedded progress page, treats empty post-reboot status as transitional until authenticated evidence proves acceptance or failure, and lets the user press Connect and verify once while the Pi is still booting by waiting up to ten minutes for SSH port 22.
 
