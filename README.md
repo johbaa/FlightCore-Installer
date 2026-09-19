@@ -19,6 +19,10 @@ The launcher does not store the Raspberry Pi password. It remembers only the SSH
 
 The embedded installation page runs in a separate sandboxed Electron view without access to the password, SSH connection, Node.js or privileged launcher functions.
 
+## DJI Spark battery recovery page
+
+The same GitHub Pages site also publishes `spark-recovery.html`. It provides the verified Nano Matter/9 V wiring diagrams and a browser control for the guarded V6 SMBus recovery engine. The browser talks only to a token-protected helper bound to `127.0.0.1`; the hosted page cannot run shell commands or access USB without that local helper. The helper package is assembled by the Pages workflow from `site/helper`.
+
 Version 1.0.0-test.8 retains the test.3 UI scope: native paste shortcuts and an editable-field context menu, the FlightCore logo throughout, harmonized embedded progress styling, and adaptive window sizing. It also keeps the user-selected window position, displays one live elapsed clock in the embedded header, removes outer document scrolling from the embedded progress page, treats empty post-reboot status as transitional until authenticated evidence proves acceptance or failure, and lets the user press Connect and verify once while the Pi is still booting by waiting up to ten minutes for SSH port 22.
 
 Test.8 also limits MAVLink Router's native Ninja build to one compilation job on the 1 GB Raspberry Pi. This directly addresses the repeatable test.6/test.7 restart under peak parallel compilation load while leaving the canonical FlightCore installer, transaction and deliberate reboot ownership unchanged.

@@ -101,6 +101,10 @@ jobs:
           cp "$MAC_SRC" "$MAC_DST"
           cp "$WIN_SRC" "$WIN_DST"
 
+          chmod +x site/helper/*.command
+          (cd site/helper && zip -q -9 "../../_site/downloads/DJI-Spark-Recovery-Mac.zip" *.command)
+          rm -rf _site/helper
+
           INSTALLER_VERSION="$(node -p "require('./package.json').version")"
           python3 - "$INSTALLER_VERSION" "$MAC_DST" "$WIN_DST" <<'PY'
           import hashlib, json, pathlib, sys
